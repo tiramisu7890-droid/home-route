@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>回家之路</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --side:176px;--top:54px;
+  --bg:#f0efe9;--card:#fff;--border:#e0dfd5;
+  --text:#1a1a18;--muted:#8a8a82;
+  --blue:#185FA5;--blue-lt:#eef3fb;--blue-d:#0d4a82;
+  --amber:#FAEEDA;--amber-t:#633806;
+  --green:#1D9E75;--red:#cc3333;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex;flex-direction:column;font-size:14px}
+button{font-family:inherit;cursor:pointer;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--text);font-size:12px;padding:6px 11px;white-space:nowrap;line-height:1.4}
+button:active{opacity:.65}
+input,textarea{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:#fff;width:100%;outline:none;color:var(--text);-webkit-appearance:none}
+input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+textarea{resize:vertical;line-height:1.55}
+
+/* ── Topbar ── */
+#topbar{height:var(--top);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;padding:0 12px;flex-shrink:0;z-index:60}
+.appname{font-size:16px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+.appcnt{font-size:11px;color:var(--muted);white-space:nowrap;margin-left:2px}
+#sw{flex:1;min-width:0;position:relative}
+#sw svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted);pointer-events:none}
+#si{padding:8px 10px 8px 28px;border-radius:9px;background:#f7f7f4;font-size:14px}
+.tbts{display:flex;gap:5px;flex-shrink:0}
+.btnp{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:700;font-size:13px;padding:7px 14px}
+
+/* ── Layout ── */
+#body{flex:1;display:flex;overflow:hidden}
+
+/* ── Sidebar ── */
+#sidebar{width:var(--side);background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;user-select:none}
+.sb-hdr{padding:10px 10px 8px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.07em;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sb-hdr-hint{font-size:9px;font-weight:400;color:#bbb;letter-spacing:0}
+#area-list{overflow-y:auto;flex:1;padding:8px 8px;display:flex;flex-direction:column;gap:5px;scrollbar-width:thin}
+#area-list::-webkit-scrollbar{width:3px}
+#area-list::-webkit-scrollbar-thumb{background:#ddd;border-radius:2px}
+
+/* Area card */
+.acard{border:1.5px solid var(--border);border-radius:10px;padding:8px 10px;cursor:pointer;background:#fff;transition:border-color .12s,background .12s;position:relative;display:flex;flex-direction:column;gap:3px}
+.acard:hover{border-color:#c0c0b8;background:#fafaf7}
+.acard.active{border-color:var(--blue);background:var(--blue-lt)}
+.acard.drag-over{border-color:var(--blue);border-style:dashed;background:#f0f5ff}
+.acard.dragging{opacity:.4}
+.acard-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.2}
+.acard.active .acard-name{color:var(--blue)}
+.acard-row{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--border);padding-top:4px;margin-top:1px}
+.acard.active .acard-row{border-color:#c0d4f0}
+.acard-cnt{font-size:15px;font-weight:700;color:var(--blue);line-height:1}
+.acard:not(.active) .acard-cnt{color:var(--muted)}
+.acard-drag{font-size:12px;color:#ccc;cursor:grab;padding:1px 2px;line-height:1;touch-action:none}
+.acard-drag:active{cursor:grabbing}
+.acard.active .acard-drag{color:#a0c0e8}
+
+/* Main */
+#main{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:7px}
+#main::-webkit-scrollbar{width:4px}
+#main::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
+
+/* Cards */
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:11px 13px;display:flex;align-items:center;gap:10px}
+.card.nc{border-color:var(--blue);border-width:2px;animation:fb 5s ease forwards}
+@keyframes fb{0%,50%{border-color:var(--blue);border-width:2px}100%{border-color:var(--border);border-width:1px}}
+.ci{width:34px;height:34px;border-radius:50%;background:var(--blue-lt);color:var(--blue);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cb{flex:1;min-width:0}
+.ca{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cbl{font-size:12px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cn{font-size:11px;color:#bbb;margin-top:2px}
+.cr{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.code{font-family:'Courier New',monospace;font-size:16px;font-weight:700;background:var(--amber);color:var(--amber-t);padding:5px 12px;border-radius:8px;cursor:pointer;user-select:none;letter-spacing:.05em;border:1px solid #f0d8a0}
+.code:active{opacity:.7}
+.cas{display:flex;gap:4px}
+.bx{font-size:11px;padding:3px 8px;border-radius:6px;color:#555}
+.bxd{color:var(--red);border-color:#f0c0c0}
+.nb{font-size:9px;background:#e3f5e1;color:#1a7a1a;border:1px solid #b2dba8;border-radius:4px;padding:1px 5px;font-weight:700;vertical-align:middle;margin-left:4px}
+.empty{text-align:center;padding:60px 20px;color:#ccc;font-size:14px}
+
+/* Overlay */
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#overlay.show{display:block}
+.oi{min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:20px 12px}
+#mbox{background:#fff;border-radius:18px;padding:20px 22px;max-width:520px;width:100%;margin:auto}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.mt{font-size:17px;font-weight:700}
+.mx{font-size:22px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#aaa;border-radius:50%}
+.mx:hover{background:#f5f5f1}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:5px}
+.hint{font-size:11px;color:#aaa;margin-top:4px;line-height:1.5}
+.dup{font-size:12px;color:var(--red);font-weight:600;margin-top:4px}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:14px;border-top:1px solid #f0f0ea}
+.bs{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:700;font-size:14px;padding:10px 26px;border-radius:10px}
+.bc{color:#666;border-color:#ddd}
+
+/* AI box */
+.aibox{background:#f5f8ff;border:1px solid #c5d5f5;border-radius:11px;padding:13px;margin-bottom:16px}
+.ait{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:9px}
+.air{display:flex;gap:8px}
+.aib{flex:1;padding:9px;border-radius:9px;font-size:13px;font-weight:500;border:1px solid #c5d5f5;background:#fff;color:var(--blue);cursor:pointer}
+.aib.cam{background:var(--blue);color:#fff;border-color:var(--blue)}
+.aib:disabled{opacity:.4;cursor:default}
+.sp{width:14px;height:14px;border:2px solid #c5d5f5;border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ast{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:12px;color:#555}
+.aok{font-size:12px;color:var(--green);font-weight:600;margin-top:8px}
+.aerr{font-size:12px;color:var(--red);margin-top:8px}
+.aprev{margin-top:10px;max-height:100px;max-width:100%;border-radius:8px;display:block;border:1px solid var(--border);object-fit:contain}
+
+/* Sugg */
+.sw{border:1px solid var(--border);border-radius:9px;margin-top:5px;overflow:hidden}
+.sh{font-size:10px;padding:4px 11px;background:#f8f8f5;color:#bbb;font-weight:600}
+.sr{padding:9px 13px;cursor:pointer;font-size:13px;border-bottom:1px solid #f5f5f0;display:flex;align-items:center;gap:8px}
+.sr:last-child{border-bottom:none}
+.sr:hover{background:#f2f6ff}
+.sa{font-weight:600}
+.sb2{color:#999;font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc{font-family:monospace;font-size:11px;background:var(--amber);color:var(--amber-t);padding:2px 7px;border-radius:4px;flex-shrink:0}
+
+/* Batch */
+.bdz{border:2px dashed #c8c8c0;border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;background:#fafaf8;margin-bottom:14px;transition:border-color .15s,background .15s}
+.bdz:hover,.bdz.over{border-color:var(--blue);background:var(--blue-lt);color:var(--blue)}
+.bdz svg{margin:0 auto 8px;display:block;opacity:.45}
+.bfmt{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.bfmt span{font-size:11px;background:#f0f0ea;color:#888;padding:2px 8px;border-radius:4px;border:1px solid #e0e0d5}
+.bl{display:flex;flex-direction:column;gap:5px;max-height:280px;overflow-y:auto;margin-bottom:14px}
+.bi{display:flex;align-items:center;gap:9px;border-radius:9px;padding:8px 11px;border:1px solid var(--border);font-size:13px}
+.bi.bok{background:#f3fbf3;border-color:#b5ddb5}
+.bi.bdup{background:#fff5f5;border-color:#f0c0c0}
+.bd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dok{background:var(--green)}.ddup{background:var(--red)}
+.baddr{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bbldg{font-size:11px;color:var(--muted)}
+.bcode{font-family:monospace;font-size:12px;background:var(--amber);color:var(--amber-t);padding:1px 7px;border-radius:4px;flex-shrink:0}
+.btag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0}
+.tok{background:#dff5df;color:#1a7a1a}.tdup{background:#ffe0e0;color:var(--red)}
+.bst{font-size:13px;color:#555;margin-bottom:10px;line-height:1.7}
+
+/* Guide */
+.gs{display:flex;gap:12px;margin-bottom:14px}
+.gn{width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.gtt{font-weight:600;font-size:14px;margin-bottom:2px}
+.gd{font-size:13px;color:#666;line-height:1.55}
+.wb{background:var(--amber);border-radius:9px;padding:11px 14px;font-size:12px;color:var(--amber-t);line-height:1.65;margin-bottom:14px}
+.apisec{padding-top:14px;border-top:1px solid #f0f0ea;margin-top:4px}
+.apist{font-size:11px;margin-top:6px;font-weight:600}
+.agood{color:var(--green)}.abad{color:#c87000}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(14px);background:#1a1a18;color:#fff;padding:10px 20px;border-radius:22px;font-size:13px;z-index:999;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;white-space:nowrap;font-weight:500}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red)}
+
+/* Mobile */
+#sbt{display:none}
+@media(max-width:660px){
+  :root{--side:156px;--top:50px}
+  #sidebar{position:fixed;top:var(--top);left:0;bottom:0;z-index:100;transform:translateX(-100%);transition:transform .2s ease}
+  #sidebar.open{transform:translateX(0);box-shadow:4px 0 16px rgba(0,0,0,.12)}
+  #sbov{display:none;position:fixed;inset:0;top:var(--top);z-index:99;background:rgba(0,0,0,.2)}
+  #sbov.show{display:block}
+  #sbt{display:flex;width:32px;height:32px;padding:0;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+  .tbts button:not(.btnp){display:none}
+  .appname{font-size:14px}
+}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <button id="sbt" onclick="toggleSB()">☰</button>
+  <span class="appname">回家之路</span>
+  <span class="appcnt" id="hcnt"></span>
+  <div id="sw">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="17" y2="17"/></svg>
+    <input type="search" id="si" placeholder="住所・建物名・コード検索" oninput="onSrch(this.value)" autocomplete="off" spellcheck="false">
+  </div>
+  <div class="tbts">
+    <button onclick="openM('guide')">⚙</button>
+    <button onclick="doExp()">↓</button>
+    <button onclick="trigImp()">↑</button>
+    <button onclick="openM('batch')">📄 一括取込</button>
+    <button class="btnp" onclick="openM('new')">＋ 追加</button>
+  </div>
+</div>
+<div id="sbov" onclick="closeSB()"></div>
+<div id="body">
+  <div id="sidebar">
+    <div class="sb-hdr"><span>エリア</span><span class="sb-hdr-hint">長押しで並替え</span></div>
+    <div id="area-list"></div>
+  </div>
+  <div id="main"></div>
+</div>
+<div id="overlay" onclick="bgClick(event)"><div class="oi"><div id="mbox"></div></div></div>
+<div id="toast"></div>
+<input type="file" id="impf" accept=".json" style="display:none" onchange="doImpJSON(this)">
+<input type="file" id="batchf" accept=".json,.xlsx,.xls,.csv,.tsv,.txt" multiple style="display:none" onchange="onBF(this)">
+<input type="file" id="icam" accept="image/*" capture="environment" style="display:none" onchange="handleImg(this.files[0])">
+<input type="file" id="ipick" accept="image/*" style="display:none" onchange="handleImg(this.files[0])">
+
+<script>
+// ── Utilities ─────────────────────────────────────────────────────────────────
+function toH(s){return(s||'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[－ーｰ‐—―−]/g,'-').replace(/\u3000/g,' ').replace(/^東京都/,'').replace(/^墨田区/,'').trim();}
+function pA(inp){
+  const s=toH(inp||'');
+  for(const p of[/^(.+?)\s*(\d+)丁目\s*(\d+)-(\d+)$/,/^(.+?)\s*(\d+)丁目\s*(\d+)番地?(\d+)号?$/,/^(.+?)\s+(\d+)-(\d+)-(\d+)$/,/^(.+?)(\d+)-(\d+)-(\d+)$/]){const m=s.match(p);if(m){const[,area,c,b,g]=m;return{area:area.trim(),chome:+c,banchi:+b,go:+g,normalized:`${area.trim()}${c}-${b}-${g}`};}}
+  return{area:s,chome:0,banchi:0,go:0,normalized:s};
+}
+function sRecs(r){return[...r].sort((a,b)=>a.area.localeCompare(b.area,'ja')||a.chome-b.chome||a.banchi-b.banchi||a.go-b.go);}
+function stripRm(s){return(s||'').replace(/\s*[-\s]?\d{3,4}(号室?)?$/,'').trim();}
+function mkR(raw){const p=pA(raw.raw_addr||'');return{id:raw.id||Date.now(),raw_addr:(raw.raw_addr||'').trim(),building:(raw.building||'').trim(),code:String(raw.code||'').replace(/\.0$/,'').trim(),notes:raw.notes||'',updated:new Date().toISOString().split('T')[0],lastUsed:null,...p};}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function sM(r,q){return toH([r.raw_addr,r.normalized,r.building,r.code,r.notes].join(' ')).toLowerCase().replace(/\s/g,'').includes(q);}
+
+// ── Storage keys ──────────────────────────────────────────────────────────────
+const LK='kaerinoie:v2',LA='kaerinoie:apikey',LO='kaerinoie:areaOrder';
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let G={records:[],srch:'',area:'all',newId:null,modal:null,eform:null,aiSt:'idle',aiImg:null,batch:[],areaOrder:[]};
+
+function lL(){try{const s=localStorage.getItem(LK);if(s){const p=JSON.parse(s);if(Array.isArray(p)&&p.length)return sRecs(p);}}catch{}return null;}
+function lS(r){try{localStorage.setItem(LK,JSON.stringify(r));}catch{}}
+function gKey(){return localStorage.getItem(LA)||'';}
+function sKey(k){k?localStorage.setItem(LA,k):localStorage.removeItem(LA);}
+function loadOrder(){try{const s=localStorage.getItem(LO);if(s)return JSON.parse(s);}catch{}return[];}
+function saveOrder(o){try{localStorage.setItem(LO,JSON.stringify(o));}catch{}}
+
+// ── Ordered areas ─────────────────────────────────────────────────────────────
+function getOrderedAreas(){
+  const counts={};G.records.forEach(r=>{counts[r.area]=(counts[r.area]||0)+1;});
+  const all=Object.keys(counts);
+  const ordered=[];
+  // First: put saved order items that still exist
+  G.areaOrder.forEach(a=>{if(counts[a])ordered.push(a);});
+  // Then: add any NEW areas not yet in order (sorted)
+  all.sort((a,b)=>a.localeCompare(b,'ja')).forEach(a=>{if(!ordered.includes(a))ordered.push(a);});
+  // Update saved order to reflect current reality
+  if(JSON.stringify(G.areaOrder)!==JSON.stringify(ordered)){G.areaOrder=ordered;saveOrder(ordered);}
+  return{counts,ordered};
+}
+
+// ── Seed ──────────────────────────────────────────────────────────────────────
+const SEED=[{id:1,raw_addr:'東向島1-10-18',building:'シュシュ向島',code:'0927'},{id:2,raw_addr:'東向島1-14-7',building:'craft東向島',code:'0120'},{id:3,raw_addr:'東向島1-24-11',building:'ライムレジデンス曳舟',code:'呼1234'},{id:4,raw_addr:'東向島2-14-2',building:'メゾン・アイナ',code:'1026'},{id:5,raw_addr:'東向島2-31-10',building:'ガーデンひきふね',code:'1000'},{id:6,raw_addr:'東向島2-34-18',building:'東向島サニーホームズ',code:'3246E'},{id:7,raw_addr:'東向島2-34-3',building:'レジェンド東向島',code:'0123'},{id:8,raw_addr:'東向島2-39-10',building:'ナンカイパートワン',code:'0123'},{id:9,raw_addr:'東向島2-46-2',building:'秋桜ハウス',code:'3721'},{id:10,raw_addr:'東向島2-49-7',building:'アルコバレーノ東向島',code:'8571'},{id:11,raw_addr:'東向島2-6-6',building:'プランドールメゾン二番館',code:'1121'},{id:12,raw_addr:'東向島2-6-7',building:'プランドールメゾン1番館',code:'1111'},{id:13,raw_addr:'東向島2-8-7',building:'メゾン目黒',code:'3751'},{id:14,raw_addr:'東向島3-17-8',building:'ハーモニーレジデンス東京#003',code:'6548'},{id:15,raw_addr:'東向島3-9-2',building:'チェリーピア21',code:'4312'},{id:16,raw_addr:'東向島4-10-1',building:'セルピエンテ',code:'1230'},{id:17,raw_addr:'東向島4-13-12',building:'リンデンバーム',code:'0305'},{id:18,raw_addr:'東向島4-20-4',building:'orbel',code:'3470'},{id:19,raw_addr:'東向島4-25-16',building:'',code:'0123'},{id:20,raw_addr:'東向島4-25-19',building:'ソレイユ',code:'8010'},{id:21,raw_addr:'東向島4-25-2',building:'shino 35',code:'3309'},{id:22,raw_addr:'東向島4-25-21',building:'SHINO36BLDG',code:'3309'},{id:23,raw_addr:'東向島4-25-5',building:'アイコトート',code:'2008'},{id:24,raw_addr:'東向島4-27-16',building:'ラフィーネ東向島',code:'9999'},{id:25,raw_addr:'東向島4-28-11',building:'プレール・ドゥーク東向島',code:'2804'},{id:26,raw_addr:'東向島4-32-9',building:'カーサグラン東向島',code:'1234'},{id:27,raw_addr:'東向島4-34-4',building:'TOKIO東向島',code:'0390'},{id:28,raw_addr:'東向島4-43-10',building:'ホワイトハイム白鬚',code:'呼99999'},{id:29,raw_addr:'東向島4-43-6',building:'エスカノイエ東向島',code:'0827'},{id:30,raw_addr:'東向島5-19-14',building:'インプルーブ東向島',code:'9131'},{id:31,raw_addr:'東向島5-3-20',building:'アムール東向島',code:'9087'},{id:32,raw_addr:'東向島5-31-2',building:'Ludens東向島MAXIV',code:'1111'},{id:33,raw_addr:'東向島5-36-1',building:'フィエルテ東向島',code:'2024'},{id:34,raw_addr:'東向島5-37-9',building:'カーサフィオーレ東向島',code:'5108'},{id:35,raw_addr:'東向島5-39-14',building:'ハーモニーレジデンス東京EAST',code:'6548'},{id:36,raw_addr:'東向島5-41-3',building:'Genovia東向島3skygarden',code:'1192'},{id:37,raw_addr:'東向島6-1-5',building:'アイル東京向島参番館',code:'5963'},{id:38,raw_addr:'東向島6-14-8',building:'スカイメゾン',code:'1234'},{id:39,raw_addr:'東向島6-21-2',building:'メゾン東向島',code:'3325'},{id:40,raw_addr:'東向島6-23-4',building:'ミルト東向島',code:'0620'},{id:41,raw_addr:'東向島6-25-6',building:'ジョワドヴィーヴル',code:'5472'},{id:42,raw_addr:'東向島6-27-7',building:'ラディエプラージュ',code:'5963'},{id:43,raw_addr:'東向島6-31-3',building:'ロイヤルパーク東向島',code:'1234'},{id:44,raw_addr:'東向島6-34-18',building:'ホーユウコンフォルト東向島',code:'*9811'},{id:45,raw_addr:'東向島6-34-4',building:'Repure ResidenceII',code:'5963'},{id:46,raw_addr:'東向島6-35-4',building:'シティパル',code:'0110'},{id:47,raw_addr:'東向島6-36-2',building:'ウェルフェア',code:'7856'},{id:48,raw_addr:'東向島6-38-3',building:'アイルイムーブル向島',code:'5140'},{id:49,raw_addr:'東向島6-46-10',building:'シャンテ東向島Ⅱ',code:'1234'},{id:50,raw_addr:'東向島6-47-9',building:'Purrusian',code:'4134'},{id:51,raw_addr:'東向島6-48-20',building:'',code:'8972'},{id:52,raw_addr:'東向島6-48-8',building:'シャーメゾン東向島s',code:'*1234'},{id:53,raw_addr:'東向島6-51-2',building:'アールデココ東向島Ⅱ',code:'0141'},{id:54,raw_addr:'東向島6-53-17',building:'レリア東向島',code:'1234'},{id:55,raw_addr:'東向島6-61-4',building:'SHIRO',code:'1111'},{id:56,raw_addr:'東向島6-9-13',building:'MTビル',code:'5963'},{id:57,raw_addr:'東向島6-9-5',building:'シャンブル向島',code:'5963'},{id:58,raw_addr:'吾妻橋3-4-2',building:'スカイフラッツ吾妻橋',code:'1234'},{id:59,raw_addr:'吾妻橋3-7-13',building:'クレストコート吾妻橋レジデンス',code:'7669'},{id:60,raw_addr:'向島1-10-6',building:'スカイコートtokyoスカイツリー',code:'1234'},{id:61,raw_addr:'向島1-15-5',building:"B'casa Mukojima",code:'1234'},{id:62,raw_addr:'向島1-18-6',building:'',code:'呼5963'},{id:63,raw_addr:'向島1-21-2',building:'',code:'2807'},{id:64,raw_addr:'向島1-22-6',building:'イニシア墨田押上',code:'5963'},{id:65,raw_addr:'向島1-24-16',building:'Mill押上',code:'5963'},{id:66,raw_addr:'向島1-25-13',building:'新東京タワーレジデンス',code:'呼1713'},{id:67,raw_addr:'向島1-25-15',building:'サンライズ向島',code:'5963'},{id:68,raw_addr:'向島1-26-7',building:'メゾンドボクスイ',code:'9999'},{id:69,raw_addr:'向島1-26-7',building:'メゾンドコウメ',code:'5920'},{id:70,raw_addr:'向島1-30-9',building:'メゾンSKMスカイツリー',code:'5963'},{id:71,raw_addr:'向島1-9-7',building:'ホタカリュミエールイワタ',code:'???'},{id:72,raw_addr:'向島2-11-10',building:'バニアンガーデン押上',code:'呼5209'},{id:73,raw_addr:'向島2-12-12',building:'',code:'呼5963'},{id:74,raw_addr:'向島2-17-6',building:'デラフェリチタ',code:'呼出1234'},{id:75,raw_addr:'向島2-20-9',building:'レクシオ向島',code:'7305'},{id:76,raw_addr:'向島2-5-9',building:'アルブル セレスト',code:'呼7455'},{id:77,raw_addr:'向島2-9-2',building:'アリュール押上',code:'呼1234'},{id:78,raw_addr:'向島3-10-8',building:'若草向島館',code:'3108'},{id:79,raw_addr:'向島3-14-13',building:'H.Aスカイ',code:'9684'},{id:80,raw_addr:'向島3-15-16',building:'リバーサイド向島',code:'2072'},{id:81,raw_addr:'向島3-26-10',building:'アイ・ステージ向島',code:'呼6150'},{id:82,raw_addr:'向島3-26-11',building:'メルベーユ・ｄｉｘ',code:'2974'},{id:83,raw_addr:'向島3-3-1',building:'ミリアレジデンス押上',code:'呼3025'},{id:84,raw_addr:'向島3-3-7',building:'グリーンパーク新向島',code:'呼1234'},{id:85,raw_addr:'向島3-30-1',building:'Liberte Skytree East',code:'5963'},{id:86,raw_addr:'向島3-34-3',building:'アピジ小梅向島',code:'1017'},{id:87,raw_addr:'向島3-36-2',building:'パークヴィラ押上',code:'1234'},{id:88,raw_addr:'向島3-4-1',building:'メゾンtmd',code:'呼5963'},{id:89,raw_addr:'向島3-4-3',building:'パインセンターハイツ向島',code:'5963'},{id:90,raw_addr:'向島3-4-3',building:'S-residence押上clair',code:'呼5220'},{id:91,raw_addr:'向島3-5-1',building:'エルセレーノ押上',code:'米1234呼'},{id:92,raw_addr:'向島3-8-3',building:'ヴォーガコルテ東京スカイツリー',code:'5963'},{id:93,raw_addr:'向島4-19-2',building:'NINEDOORS',code:'*1234呼'},{id:94,raw_addr:'向島4-20-16',building:'ブルームタワー押上',code:'4126'},{id:95,raw_addr:'向島4-21-10',building:'カーサヴェルデ高津',code:'呼1942'},{id:96,raw_addr:'向島5-18-6',building:'',code:'呼5546'},{id:97,raw_addr:'向島5-29-13',building:'ヴィラスカイツリーパート3',code:'0912'},{id:98,raw_addr:'向島5-31-1',building:'レアライズ押上ii',code:'5963'},{id:99,raw_addr:'向島5-33-5',building:'アリカ向島',code:'呼5963'},{id:100,raw_addr:'向島5-33-7',building:'Ar向島',code:'呼5963'},{id:101,raw_addr:'向島5-38-6',building:'ディアレイシャス押上桜橋2',code:'0450'},{id:102,raw_addr:'向島5-43-14',building:'シーフォルムネクスト向島',code:'4545'},{id:103,raw_addr:'向島5-45-10',building:'リエトコート向島',code:'*5963呼出'},{id:104,raw_addr:'押上1-39-5',building:'リブレ・ハルミ',code:'呼1234'},{id:105,raw_addr:'押上1-45-4',building:'ラグラース押上ii',code:'#5963'},{id:106,raw_addr:'押上1-45-7',building:'スカイツリープレイス',code:'0204'},{id:107,raw_addr:'押上1-50-6',building:'アイルカナーレ',code:'0843'},{id:108,raw_addr:'押上2-2-1',building:'小梅サンエムコーポ',code:'1342'},{id:109,raw_addr:'押上2-9-20',building:'ラ・ブークル',code:'呼1111'},{id:110,raw_addr:'押上3-19-14',building:'サンハイム',code:'1234'},{id:111,raw_addr:'押上3-23-6',building:'ファインクレスト押上',code:'呼1000'},{id:112,raw_addr:'押上3-39-7',building:'フェリオ',code:'3397'},{id:113,raw_addr:'押上3-38-2',building:'Maison S・e',code:'0123'},{id:114,raw_addr:'京島1-42-2',building:'グレースハイム',code:'1234'},{id:115,raw_addr:'京島1-43-4',building:'パークサイド曳舟',code:'2525'},{id:116,raw_addr:'京島1-44-1',building:'Bless曳舟',code:'呼5963'},{id:117,raw_addr:'京島1-47-12',building:'',code:'6548'},{id:118,raw_addr:'京島3-10-3',building:'タック曳舟',code:'2647'},{id:119,raw_addr:'京島3-32-9',building:'グランメゾン京島',code:'0123'},{id:120,raw_addr:'京島3-58-14',building:'ヴィラコート',code:'7341'},{id:121,raw_addr:'八広1-10-11',building:'',code:'呼5963'},{id:122,raw_addr:'八広1-14-9',building:"P'z CUBE",code:'0185'},{id:123,raw_addr:'八広1-15-14',building:'パルティール曳舟',code:'1234呼'},{id:124,raw_addr:'八広1-2-11',building:'サンステージ曳舟',code:'5678'},{id:125,raw_addr:'八広1-25-1',building:'スタシオン曳舟',code:'7358'},{id:126,raw_addr:'八広1-25-12',building:'きんでん曳舟寮',code:'5963'},{id:127,raw_addr:'八広1-3-2',building:'アイルプレミアム押上ノース',code:'5140'},{id:128,raw_addr:'八広1-37-10',building:'ルソレイユ',code:'5963'},{id:129,raw_addr:'八広1-41-7',building:'八広オーブハイツii',code:'5546'},{id:130,raw_addr:'八広1-42-7',building:'Tsイースティア',code:'9584'},{id:131,raw_addr:'八広1-9-10',building:'アクシス墨田',code:'呼1234'},{id:132,raw_addr:'八広1-9-4',building:'シャーブルック',code:'5963'},{id:133,raw_addr:'八広2-14-7',building:'エーデルハイム石澤',code:'1239'},{id:134,raw_addr:'八広2-38-11',building:'パティーナ曳舟',code:'呼1234'},{id:135,raw_addr:'八広2-4-15',building:'Gloria-K',code:'1031'},{id:136,raw_addr:'八広2-56-5',building:'エストゥルースプラス八広',code:'1234'},{id:137,raw_addr:'八広3-17-11',building:'Dips墨田eastii',code:'0129'},{id:138,raw_addr:'八広3-31-12',building:'サニーコート向島',code:'1234'},{id:139,raw_addr:'八広4-10-8',building:'シャーメゾン金井',code:'0438'},{id:140,raw_addr:'八広5-6-6',building:'SRS八広',code:'1314'},{id:141,raw_addr:'八広6-29-8',building:'メープル3',code:'1230'},{id:142,raw_addr:'八広6-5-3',building:'',code:'2021'},{id:143,raw_addr:'東墨田2-1-10',building:'アヴェニーユ参番館(3rd)',code:'5123'},{id:144,raw_addr:'東墨田2-27-2',building:'',code:'呼5963'},{id:145,raw_addr:'東墨田3-21-6',building:'レオパレスミルガール',code:'#4153'},{id:146,raw_addr:'文花1-17-2',building:'アデッソ押上',code:'5300'},{id:147,raw_addr:'文花1-4-4',building:'ヒマモワ',code:'0119'},{id:148,raw_addr:'文花2-9-14',building:'メゾンエスドゥフォレ',code:'*1234呼'},{id:149,raw_addr:'亀戸3-25-2',building:'D-room天神',code:'※1234'},{id:150,raw_addr:'亀戸3-8-4',building:'クレアメゾン天神橋',code:'1234'},{id:151,raw_addr:'亀戸4-28-13',building:'クレヴィスタ亀戸2',code:'呼1234'},{id:152,raw_addr:'業平2-17-1',building:'グレイスフルサカイ',code:'110'},{id:153,raw_addr:'業平3-17-9',building:'マルホンビル',code:'1123'},{id:154,raw_addr:'立花1-34-16',building:'リビエラヴィラージュ',code:'0123'},{id:155,raw_addr:'立花5-16-1',building:'プラムハイツ',code:'1991'}].map(r=>mkR(r));
+
+(function(){G.records=lL()||sRecs(SEED);G.areaOrder=loadOrder();renderAll();})();
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function renderAll(){renderSB();renderMain();}
+
+function renderSB(){
+  const {counts,ordered}=getOrderedAreas();
+  const allCnt=G.records.length;
+  // "全て" always first, fixed
+  let html=`<div class="acard${G.area==='all'?' active':''}" onclick="setArea('all')">
+    <div class="acard-name">全て</div>
+    <div class="acard-row"><span class="acard-cnt">${allCnt}</span></div>
+  </div>`;
+  // Ordered draggable areas
+  ordered.forEach((a,i)=>{
+    const act=G.area===a?' active':'';
+    html+=`<div class="acard${act}" data-area="${esc(a)}" data-idx="${i}"
+      draggable="true"
+      ondragstart="dragStart(event,'${esc(a)}')"
+      ondragover="dragOver(event)"
+      ondragleave="dragLeave(event)"
+      ondrop="doDrop(event,'${esc(a)}')"
+      ondragend="dragEnd(event)"
+      onclick="setArea('${esc(a)}')"
+    >
+      <div class="acard-name">${esc(a)}</div>
+      <div class="acard-row">
+        <span class="acard-cnt">${counts[a]||0}</span>
+        <span class="acard-drag" title="ドラッグで並替え"
+          onmousedown="e=>e.stopPropagation()"
+          ontouchstart="touchDragStart(event,'${esc(a)}')"
+        >⠿</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('area-list').innerHTML=html;
+  document.getElementById('hcnt').textContent=`${G.records.length}件`;
+}
+
+function renderMain(){
+  const q=toH(G.srch).toLowerCase().replace(/\s/g,'');
+  let list=G.records;
+  if(G.area!=='all')list=list.filter(r=>r.area===G.area);
+  if(q)list=list.filter(r=>sM(r,q));
+  list=sRecs(list);
+  if(!list.length){document.getElementById('main').innerHTML=`<div class="empty">${G.srch?'検索結果がありません':'データがありません'}</div>`;return;}
+  document.getElementById('main').innerHTML=list.map(r=>{
+    const isN=r.id===G.newId;
+    const bldg=r.building||'<span style="color:#ccc">建物名なし</span>';
+    const nb=isN?'<span class="nb">NEW</span>':'';
+    return`<div class="card${isN?' nc':''}" id="card-${r.id}">
+      <div class="ci">${r.area.charAt(0)||'?'}</div>
+      <div class="cb"><div class="ca">${esc(r.normalized)}${nb}</div><div class="cbl">${bldg}</div>${r.notes?`<div class="cn">${esc(r.notes)}</div>`:''}</div>
+      <div class="cr">
+        <div class="code" onclick="cpCode('${esc(r.code)}','${r.id}')">${esc(r.code)}</div>
+        <div class="cas">
+          <button class="bx" onclick="cpAddr('${esc(r.normalized)}','${r.id}')">住所</button>
+          <button class="bx" onclick="openM('edit',${r.id})">編集</button>
+          <button class="bx bxd" onclick="openM('del',${r.id})">削除</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Drag & Drop reorder ───────────────────────────────────────────────────────
+let _dragSrc=null;
+function dragStart(e,a){_dragSrc=a;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function dragEnd(e){e.currentTarget.classList.remove('dragging','drag-over');}
+function dragOver(e){e.preventDefault();e.currentTarget.classList.add('drag-over');return false;}
+function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
+function doDrop(e,target){
+  e.preventDefault();e.currentTarget.classList.remove('drag-over');
+  if(!_dragSrc||_dragSrc===target)return;
+  const o=[...G.areaOrder];
+  const fi=o.indexOf(_dragSrc),ti=o.indexOf(target);
+  if(fi<0||ti<0)return;
+  o.splice(fi,1);o.splice(ti,0,_dragSrc);
+  G.areaOrder=o;saveOrder(o);_dragSrc=null;renderSB();
+}
+
+// Touch drag for mobile
+let _tDragArea=null,_tClone=null,_tItems=null,_tTarget=null;
+function touchDragStart(e,a){
+  e.stopPropagation();
+  _tDragArea=a;
+  const el=e.currentTarget.closest('.acard');
+  _tItems=document.querySelectorAll('.acard[data-area]');
+  // Clone for visual
+  _tClone=el.cloneNode(true);
+  Object.assign(_tClone.style,{position:'fixed',width:el.offsetWidth+'px',opacity:'.7',pointerEvents:'none',zIndex:'9999',borderColor:'var(--blue)',background:'var(--blue-lt)'});
+  document.body.appendChild(_tClone);
+  document.addEventListener('touchmove',onTouchMove,{passive:false});
+  document.addEventListener('touchend',onTouchEnd);
+}
+function onTouchMove(e){
+  e.preventDefault();
+  const t=e.touches[0];
+  _tClone.style.left=(t.clientX-60)+'px';
+  _tClone.style.top=(t.clientY-20)+'px';
+  // Find target card
+  _tTarget=null;
+  _tItems.forEach(el=>{
+    el.classList.remove('drag-over');
+    const r=el.getBoundingClientRect();
+    if(t.clientX>=r.left&&t.clientX<=r.right&&t.clientY>=r.top&&t.clientY<=r.bottom){
+      _tTarget=el.dataset.area;el.classList.add('drag-over');
+    }
+  });
+}
+function onTouchEnd(){
+  document.removeEventListener('touchmove',onTouchMove);
+  document.removeEventListener('touchend',onTouchEnd);
+  if(_tClone){_tClone.remove();_tClone=null;}
+  _tItems&&_tItems.forEach(el=>el.classList.remove('drag-over'));
+  if(_tDragArea&&_tTarget&&_tDragArea!==_tTarget){
+    const o=[...G.areaOrder];
+    const fi=o.indexOf(_tDragArea),ti=o.indexOf(_tTarget);
+    if(fi>=0&&ti>=0){o.splice(fi,1);o.splice(ti,0,_tDragArea);}
+    G.areaOrder=o;saveOrder(o);
+  }
+  _tDragArea=null;_tTarget=null;renderSB();
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+function setArea(a){G.area=a;closeSB();renderAll();}
+function onSrch(v){G.srch=v;renderMain();}
+function cpCode(c,id){navigator.clipboard.writeText(c).then(()=>{toast('コード コピー完了');touch(id);}).catch(()=>toast('失敗',true));}
+function cpAddr(a,id){navigator.clipboard.writeText(a).then(()=>{toast('住所 コピー完了');touch(id);}).catch(()=>toast('失敗',true));}
+function touch(id){G.records=G.records.map(r=>r.id==id?{...r,lastUsed:new Date().toISOString()}:r);lS(G.records);}
+
+function toggleSB(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sbov').classList.toggle('show');}
+function closeSB(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sbov').classList.remove('show');}
+
+function doExp(){
+  const blob=new Blob([JSON.stringify({version:3,exported:new Date().toISOString(),count:G.records.length,records:G.records},null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`回家之路_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);toast('バックアップ完了');
+}
+function trigImp(){document.getElementById('impf').click();}
+function doImpJSON(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();r.onload=e=>{
+    try{const raw=JSON.parse(e.target.result);const arr=Array.isArray(raw)?raw:Array.isArray(raw.records)?raw.records:null;
+    if(!arr||!arr.length){toast('データなし',true);return;}
+    G.records=sRecs(arr.map(r=>mkR(r)));lS(G.records);renderAll();toast(`${G.records.length}件 復元完了`);
+    }catch{toast('ファイルエラー',true);}
+  };r.readAsText(f);inp.value='';
+}
+
+let _tt=null;
+function toast(msg,err=false){const el=document.getElementById('toast');el.textContent=msg;el.className='show'+(err?' err':'');clearTimeout(_tt);_tt=setTimeout(()=>{el.className='';},2400);}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openM(type,id){
+  G.modal=type;G.aiSt='idle';G.aiImg=null;G.batch=[];
+  if(type==='new')G.eform={raw_addr:'',building:'',code:'',notes:'',id:null};
+  else if(type==='edit'){const r=G.records.find(r=>r.id==id);if(!r)return;G.eform={...r};}
+  else if(type==='del')G.eform={id};
+  renderM();document.getElementById('overlay').className='show';
+}
+function closeM(){document.getElementById('overlay').className='';G.modal=null;G.eform=null;}
+function bgClick(e){if(e.target===document.getElementById('overlay'))closeM();}
+function renderM(){
+  const fn={new:bldEdit,edit:bldEdit,del:bldDel,guide:bldGuide,batch:bldBatch}[G.modal];
+  if(fn)document.getElementById('mbox').innerHTML=fn();
+  if(G.modal==='batch')initDrop();
+}
+
+// ── Edit Modal ────────────────────────────────────────────────────────────────
+function bldEdit(){
+  const f=G.eform,isN=G.modal==='new';
+  const p=f.raw_addr?pA(f.raw_addr):null;
+  const dups=p?findD(p.normalized,f.id):[];
+  const dupH=dups.length?`<div class="dup">⚠ 既に登録済み：${dups.map(r=>r.building||r.normalized).join('、')}</div>`:'';
+  const adH=p&&p.area?`<div class="hint">→ ${p.normalized}（${p.area} ${p.chome}丁目 ${p.banchi}番 ${p.go}号）</div>`:'';
+  const busy=G.aiSt==='reading'||G.aiSt==='parsing';
+  const ast=busy?`<div class="ast"><div class="sp"></div>${G.aiSt==='reading'?'読み込み中...':'AI解析中...'}</div>`:G.aiSt==='done'?`<div class="aok">✓ 解析完了。確認してください</div>`:G.aiSt==='error'?`<div class="aerr">解析失敗。手動で入力してください</div>`:'';
+  const imgH=G.aiImg?`<img class="aprev" src="${G.aiImg}">`:'';
+  return`<div class="mh"><div class="mt">${isN?'新規追加':'記録を編集'}</div><button class="mx" onclick="closeM()">×</button></div>
+  <div class="aibox"><div class="ait">配達アプリ画面から自動入力</div>
+    <div class="air"><button class="aib cam" ${busy?'disabled':''} onclick="document.getElementById('icam').click()">カメラ撮影</button><button class="aib" ${busy?'disabled':''} onclick="document.getElementById('ipick').click()">画像を選択</button></div>
+    ${ast}${imgH}</div>
+  <div class="field"><label>住所 *</label><input id="fa" value="${esc(f.raw_addr)}" placeholder="東向島6-38-3" oninput="onAI(this.value)" autocomplete="off">${adH}${dupH}<div id="sbox"></div></div>
+  <div class="field"><label>建物名</label><input id="fb" value="${esc(f.building)}" placeholder="マンション名（部屋番号不要）" autocomplete="off"></div>
+  <div class="field"><label>アクセスコード *</label><input id="fc" value="${esc(f.code)}" placeholder="5140 / 呼1234 / *5963" style="font-family:monospace;font-size:18px;font-weight:700;letter-spacing:.06em"></div>
+  <div class="field"><label>備考</label><textarea id="fn" rows="2">${esc(f.notes||'')}</textarea></div>
+  <div class="mf"><button class="bc" onclick="closeM()">キャンセル</button><button class="bs" onclick="subF()">保存する</button></div>`;
+}
+function onAI(val){
+  G.eform.raw_addr=val;const p=pA(val);
+  const inp=document.getElementById('fa');if(!inp)return;
+  inp.parentNode.querySelectorAll('.hint,.dup').forEach(e=>e.remove());
+  const adH=p&&p.area?`<div class="hint">→ ${p.normalized}（${p.area} ${p.chome}丁目 ${p.banchi}番 ${p.go}号）</div>`:'';
+  const dups=p?findD(p.normalized,G.eform.id):[];
+  const dupH=dups.length?`<div class="dup">⚠ 既に登録済み：${dups.map(r=>r.building||r.normalized).join('、')}</div>`:'';
+  inp.insertAdjacentHTML('afterend',adH+dupH);
+  const sb=document.getElementById('sbox');if(!sb||val.length<=2){if(sb)sb.innerHTML='';return;}
+  const q=toH(val).toLowerCase().replace(/\s/g,'');
+  const hits=G.records.filter(r=>{if(r.id===G.eform.id)return false;const h=toH(r.normalized+r.building).toLowerCase().replace(/\s/g,'');return h.includes(q)||q.includes(h.slice(0,Math.max(q.length-1,3)));}).slice(0,4);
+  sb.innerHTML=hits.length?`<div class="sw"><div class="sh">類似住所（タップで入力）</div>${hits.map((r,i)=>`<div class="sr" onclick="apS(${i})"><span class="sa">${esc(r.normalized)}</span><span class="sb2">${esc(r.building)}</span><span class="sc">${esc(r.code)}</span></div>`).join('')}</div>`:'';
+  if(hits.length)sb._h=hits;
+}
+function apS(i){const sb=document.getElementById('sbox');if(!sb||!sb._h)return;const r=sb._h[i];['fa','fb','fc'].forEach((id,j)=>{const el=document.getElementById(id);if(el)el.value=[r.raw_addr,r.building,r.code][j];});Object.assign(G.eform,{raw_addr:r.raw_addr,building:r.building,code:r.code});sb.innerHTML='';}
+function findD(norm,exId){return G.records.filter(r=>r.normalized===norm&&r.id!=exId);}
+function subF(){
+  const addr=(document.getElementById('fa').value||'').trim();
+  const bldg=stripRm((document.getElementById('fb').value||'').trim());
+  const code=(document.getElementById('fc').value||'').trim();
+  const notes=(document.getElementById('fn').value||'').trim();
+  if(!addr){toast('住所を入力してください',true);return;}
+  if(!code){toast('アクセスコードを入力してください',true);return;}
+  const p=pA(addr);const today=new Date().toISOString().split('T')[0];
+  const isEdit=G.eform.id&&G.records.find(r=>r.id===G.eform.id);
+  if(isEdit){
+    G.records=G.records.map(r=>r.id===G.eform.id?{...r,...p,raw_addr:addr,building:bldg,code,notes,updated:today}:r);
+    G.newId=G.eform.id;lS(G.records);closeM();renderAll();toast('更新しました');
+  }else{
+    const nid=Math.max(0,...G.records.map(r=>r.id))+1;
+    const nr={...mkR({raw_addr:addr,building:bldg,code,notes,id:nid}),...p,updated:today};
+    G.records=sRecs([...G.records,nr]);
+    G.newId=nid;lS(G.records);closeM();renderAll();toast('追加しました ✓');
+    setTimeout(()=>{const el=document.getElementById(`card-${nid}`);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},80);
+    setTimeout(()=>{G.newId=null;renderMain();},6000);
+  }
+}
+
+// ── Delete Modal ──────────────────────────────────────────────────────────────
+function bldDel(){
+  const r=G.records.find(r=>r.id===G.eform.id);if(!r)return'';
+  return`<div class="mh"><div class="mt">削除の確認</div><button class="mx" onclick="closeM()">×</button></div>
+  <div class="field"><div style="font-weight:700;font-size:15px;margin-bottom:4px">${esc(r.normalized)}</div><div style="font-size:13px;color:var(--muted);margin-bottom:4px">${esc(r.building||'建物名なし')} — ${esc(r.code)}</div><div style="font-size:13px;color:var(--red)">この操作は元に戻せません。</div></div>
+  <div class="mf"><button class="bc" onclick="closeM()">キャンセル</button><button style="background:var(--red);color:#fff;border-color:var(--red);font-weight:700;font-size:14px;padding:10px 22px;border-radius:10px" onclick="confDel()">削除する</button></div>`;
+}
+function confDel(){G.records=G.records.filter(r=>r.id!==G.eform.id);lS(G.records);closeM();renderAll();toast('削除しました');}
+
+// ── Batch Import Modal ────────────────────────────────────────────────────────
+function bldBatch(){
+  const items=G.batch;const ok=items.filter(i=>!i.isDup);const dup=items.filter(i=>i.isDup);
+  const st=items.length?`<div class="bst">合計 <b>${items.length}</b> 件 — 新規 <b style="color:#1a7a1a">${ok.length}</b> 件、重複スキップ <b style="color:var(--red)">${dup.length}</b> 件</div>`:'';
+  const lst=items.length?`<div class="bl">${items.map(it=>`<div class="bi ${it.isDup?'bdup':'bok'}"><div class="bd ${it.isDup?'ddup':'dok'}"></div><div style="flex:1;min-width:0"><div class="baddr">${esc(it.rec.normalized)}</div>${it.rec.building?`<div class="bbldg">${esc(it.rec.building)}</div>`:''}${it.isDup?`<div class="bbldg" style="color:var(--red)">既存: ${esc(it.dupWith)}</div>`:''}</div><span class="bcode">${esc(it.rec.code)}</span><span class="btag ${it.isDup?'tdup':'tok'}">${it.isDup?'重複':'新規'}</span></div>`).join('')}</div>`:'';
+  const ft=items.length?`<button class="bc" onclick="closeM()">キャンセル</button>${ok.length?`<button class="bs" onclick="doBatch()">${ok.length}件を追加する</button>`:`<button class="bs" disabled style="opacity:.4;cursor:default">追加するデータなし</button>`}`:'<button class="bc" onclick="closeM()">閉じる</button>';
+  return`<div class="mh"><div class="mt">一括取込</div><button class="mx" onclick="closeM()">×</button></div>
+  <div id="bdz" class="bdz" onclick="document.getElementById('batchf').click()">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <div style="font-weight:600;margin-bottom:4px">ファイルをここにドロップ</div>
+    <div style="font-size:12px;margin-bottom:6px">またはタップして選択（複数可）</div>
+    <div class="bfmt"><span>JSON</span><span>Excel (.xlsx/.xls)</span><span>CSV / TSV</span></div>
+  </div>
+  ${st}${lst}<div class="mf">${ft}</div>`;
+}
+function initDrop(){
+  const dz=document.getElementById('bdz');if(!dz)return;
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');parseBatch([...e.dataTransfer.files]);});
+}
+function onBF(inp){parseBatch([...inp.files]);inp.value='';}
+
+// ── File Parsing ──────────────────────────────────────────────────────────────
+function parseBatch(files){
+  let all=[],pend=files.length;if(!pend)return;
+  files.forEach(file=>{
+    const name=file.name.toLowerCase();
+    if(name.endsWith('.json'))parseJSON(file,r=>{all=all.concat(r);if(--pend===0)procBatch(all);});
+    else if(name.endsWith('.xlsx')||name.endsWith('.xls'))parseExcel(file,r=>{all=all.concat(r);if(--pend===0)procBatch(all);});
+    else if(name.endsWith('.csv')||name.endsWith('.tsv')||name.endsWith('.txt'))parseCSV(file,r=>{all=all.concat(r);if(--pend===0)procBatch(all);});
+    else{if(--pend===0)procBatch(all);}
+  });
+}
+
+function parseJSON(file,cb){
+  const r=new FileReader();r.onload=e=>{
+    try{const raw=JSON.parse(e.target.result);const arr=Array.isArray(raw)?raw:Array.isArray(raw.records)?raw.records:[];
+    cb(arr.filter(r=>r.raw_addr&&r.code).map(r=>mkR(r)));}catch{cb([]);}
+  };r.readAsText(file);
+}
+
+function parseExcel(file,cb){
+  if(typeof XLSX==='undefined'){cb([]);toast('SheetJS 未ロード',true);return;}
+  const r=new FileReader();r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      let all=[];
+      wb.SheetNames.forEach(sn=>{
+        const ws=wb.Sheets[sn];
+        const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+        all=all.concat(rowsToRecs(rows));
+      });
+      cb(all);
+    }catch(err){cb([]);toast('Excel読み込みエラー: '+err.message,true);}
+  };r.readAsArrayBuffer(file);
+}
+
+function parseCSV(file,cb){
+  const r=new FileReader();r.onload=e=>{
+    try{
+      const text=e.target.result;
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      if(!lines.length){cb([]);return;}
+      // Detect separator
+      const sep=text.includes('\t')?'\t':',';
+      const headers=lines[0].split(sep).map(h=>h.replace(/^"|"$/g,'').trim());
+      const rows=lines.slice(1).map(line=>{
+        const vals=splitCSVLine(line,sep);
+        const obj={};headers.forEach((h,i)=>{obj[h]=vals[i]||'';});return obj;
+      });
+      cb(rowsToRecs(rows));
+    }catch{cb([]);}
+  };r.readAsText(file,'UTF-8');
+}
+
+function splitCSVLine(line,sep){
+  const res=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){inQ=!inQ;}else if(c===sep&&!inQ){res.push(cur);cur='';}else{cur+=c;}}
+  res.push(cur);return res.map(s=>s.replace(/^"|"$/g,'').trim());
+}
+
+// Map various column names to our schema
+function rowsToRecs(rows){
+  return rows.map(row=>{
+    const get=(...keys)=>{for(const k of keys){const v=row[k]||row[k.toLowerCase()]||row[k.toUpperCase()]||'';if(String(v).trim())return String(v).trim();}return'';};
+    const addr=get('raw_addr','住所','address','アドレス','Address','標準地址','原始地址');
+    const bldg=get('building','建物名','建物','マンション名','Building');
+    const code=get('code','アクセスコード','門禁コード','密码','Code','コード','门禁密碼');
+    const notes=get('notes','備考','メモ','Notes','Memo');
+    if(!addr||!code)return null;
+    return mkR({raw_addr:addr,building:bldg,code,notes});
+  }).filter(Boolean);
+}
+
+function procBatch(inc){
+  const seen=new Set();
+  G.batch=inc.map(rec=>{
+    const norm=rec.normalized;
+    const ex=G.records.find(r=>r.normalized===norm);const self=seen.has(norm);seen.add(norm);
+    const isDup=!!(ex||self);
+    const dupWith=ex?(ex.building||ex.normalized):self?'このファイル内に同じ住所':'';
+    return{rec,isDup,dupWith};
+  });
+  renderM();
+}
+function doBatch(){
+  const toAdd=G.batch.filter(i=>!i.isDup).map(i=>i.rec);if(!toAdd.length)return;
+  let mx=Math.max(0,...G.records.map(r=>r.id));
+  G.records=sRecs([...G.records,...toAdd.map(r=>({...r,id:++mx}))]);
+  lS(G.records);closeM();renderAll();toast(`${toAdd.length}件を追加しました`);
+}
+
+// ── Guide Modal ───────────────────────────────────────────────────────────────
+function bldGuide(){
+  const k=gKey();
+  return`<div class="mh"><div class="mt">設定 / 機種変更</div><button class="mx" onclick="closeM()">×</button></div>
+  <div class="gs"><div class="gn">1</div><div><div class="gtt">旧端末でバックアップ</div><div class="gd">「↓」をタップ。JSONファイルが保存されます。</div></div></div>
+  <div class="gs"><div class="gn">2</div><div><div class="gtt">新端末にファイルを転送</div><div class="gd">AirDrop・LINE・メール等でJSONを新端末に送ります。</div></div></div>
+  <div class="gs"><div class="gn">3</div><div><div class="gtt">新端末で復元</div><div class="gd">このHTMLを開いて「↑」をタップ、JSONを選ぶと全データが戻ります。</div></div></div>
+  <div class="wb">定期的に「↓」でJSONを保存しておくと安心です。ブラウザのデータ消去でデータが消える場合があります。</div>
+  <div class="apisec">
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px">AI画像解析 APIキー</div>
+    <input type="password" id="ak" placeholder="sk-ant-..." value="${esc(k)}" style="font-family:monospace;font-size:13px">
+    <div style="font-size:11px;color:#999;margin-top:6px;line-height:1.55">Anthropic APIキーを設定するとカメラ撮影でアクセスコードを自動認識できます。<a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> で取得。このデバイスにのみ保存されます。</div>
+    <div class="apist ${k?'agood':'abad'}" id="apist">${k?'✓ APIキー設定済み':'未設定（AI機能は利用不可）'}</div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button onclick="svKey()" style="background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600">保存</button>
+      <button onclick="clKey()" style="color:var(--red);border-color:#f0c0c0">削除</button>
+    </div>
+  </div>
+  <div class="mf"><button onclick="closeM()">閉じる</button></div>`;
+}
+function svKey(){const k=(document.getElementById('ak').value||'').trim();sKey(k);const el=document.getElementById('apist');if(el){el.className='apist '+(k?'agood':'abad');el.textContent=k?'✓ 保存しました':'削除しました';}toast(k?'APIキーを保存しました':'削除しました');}
+function clKey(){sKey('');const i=document.getElementById('ak');if(i)i.value='';const el=document.getElementById('apist');if(el){el.className='apist abad';el.textContent='未設定';}toast('削除しました');}
+
+// ── AI Image ──────────────────────────────────────────────────────────────────
+function handleImg(file){
+  if(!file)return;const k=gKey();if(!k){toast('APIキー未設定。設定⚙から入力してください',true);return;}
+  G.aiSt='reading';G.aiImg=null;renderM();
+  const reader=new FileReader();reader.onload=async e=>{
+    const du=e.target.result;G.aiImg=du;G.aiSt='parsing';renderM();
+    try{
+      const res=await callCl(du.split(',')[1],file.type||'image/jpeg',k);
+      const bldg=stripRm(res.building||'');
+      Object.assign(G.eform,{raw_addr:res.address||G.eform.raw_addr,building:bldg,code:res.code||G.eform.code});
+      G.aiSt='done';renderM();
+      ['fa','fb','fc'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.value=[G.eform.raw_addr,G.eform.building,G.eform.code][i];});
+      if(G.eform.raw_addr)onAI(G.eform.raw_addr);
+    }catch(err){G.aiSt='error';renderM();toast('AI解析失敗: '+err.message,true);}
+  };reader.readAsDataURL(file);
+  document.getElementById('icam').value='';document.getElementById('ipick').value='';
+}
+async function callCl(b64,mt,k){
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':k,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mt,data:b64}},{type:'text',text:`この画像はAmazon配達アプリのスクリーンショットです。JSON形式だけ返してください：\n{"address":"住所（東京都・墨田区除く、例:東向島6-38-3）","building":"建物名のみ（部屋番号絶対含めない）","code":"アクセスコードの値（記号も含む、なければ空）","notes":""}\nアクセスコードは「アクセスコード：」の後の値`}]}]})});
+  if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${r.status}`);}
+  const d=await r.json();const t=d.content?.map(c=>c.text||'').join('')||'';
+  const m=t.match(/\{[\s\S]*\}/);if(!m)throw new Error('JSON not found');return JSON.parse(m[0]);
+}
+</script>
+</body>
+</html>
