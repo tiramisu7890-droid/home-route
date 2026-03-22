@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>回家之路</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--sw:86px;--top:52px;--bg:#f0efe9;--card:#fff;--bdr:#e0dfd5;--txt:#1a1a18;--mut:#8a8a82;--bl:#185FA5;--bll:#eef3fb;--amb:#FAEEDA;--ambt:#633806;--grn:#1D9E75;--red:#cc3333;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:var(--bg);color:var(--txt);height:100dvh;overflow:hidden;display:flex;flex-direction:column;font-size:14px}
+button{font-family:inherit;cursor:pointer;border:1px solid var(--bdr);border-radius:8px;background:#fff;color:var(--txt);font-size:12px;padding:6px 11px;white-space:nowrap;line-height:1.4}
+button:active{opacity:.65}
+input,textarea{font-family:inherit;font-size:14px;padding:9px 12px;border:1px solid var(--bdr);border-radius:9px;background:#fff;width:100%;outline:none;color:var(--txt);-webkit-appearance:none}
+input:focus,textarea:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+textarea{resize:vertical;line-height:1.55}
+
+/* Topbar */
+#topbar{height:var(--top);background:#fff;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;padding:0 10px 0 10px;flex-shrink:0;z-index:60}
+.apptw{display:flex;align-items:baseline;gap:4px;flex-shrink:0}
+.appname{font-size:14px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+.appcnt{font-size:10px;color:var(--mut);white-space:nowrap}
+#sw2{flex:1;min-width:0;position:relative}
+#sw2 svg{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--mut);pointer-events:none}
+#si{padding:7px 8px 7px 26px;border-radius:9px;background:#f7f7f4;font-size:13px}
+#menubtn{width:36px;height:36px;padding:0;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--bdr);background:#fff}
+#menubtn.open{background:var(--bll);border-color:var(--bl)}
+
+/* Dropdown */
+#dropmenu{display:none;position:fixed;top:var(--top);right:10px;background:#fff;border:1px solid var(--bdr);border-radius:13px;box-shadow:0 4px 20px rgba(0,0,0,.12);z-index:9990;min-width:185px;overflow:hidden}
+#dropmenu.show{display:block}
+.dmi{display:flex;align-items:center;gap:10px;padding:12px 15px;cursor:pointer;font-size:13px;color:var(--txt);border-bottom:1px solid #f0f0ea}
+.dmi:last-child{border-bottom:none}
+.dmi:hover{background:#f5f5f1}
+.dmi svg{width:15px;height:15px;flex-shrink:0;color:var(--mut)}
+#dov{display:none;position:fixed;inset:0;z-index:9989}
+#dov.show{display:block}
+
+/* Body */
+#body{flex:1;display:flex;overflow:hidden}
+
+/* Sidebar */
+#sidebar{width:var(--sw);background:#fff;border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;-webkit-user-select:none;user-select:none}
+.sb-hdr{padding:7px 7px 5px;font-size:9px;font-weight:700;color:var(--mut);letter-spacing:.07em;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.sb-hint{font-size:8px;font-weight:400;color:#ccc}
+#alist{overflow-y:auto;flex:1;padding:4px;display:flex;flex-direction:column;gap:3px;scrollbar-width:none}
+#alist::-webkit-scrollbar{display:none}
+.acard{border:1.5px solid var(--bdr);border-radius:9px;padding:5px 6px 4px;cursor:pointer;background:#fff;transition:border-color .12s,background .12s;display:flex;flex-direction:column;gap:2px;-webkit-user-select:none;user-select:none}
+.acard:hover{border-color:#c0c0b8;background:#fafaf6}
+.acard.active{border-color:var(--bl);background:var(--bll)}
+.acard.drag-over{border-color:var(--bl);border-style:dashed}
+.acard.dragging{opacity:.35}
+.ac-name{font-size:11px;font-weight:700;color:var(--txt);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acard.active .ac-name{color:var(--bl)}
+.ac-bot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--bdr);padding-top:3px;margin-top:1px}
+.acard.active .ac-bot{border-color:#c5d8f0}
+.ac-cnt{font-size:13px;font-weight:700;color:var(--mut)}
+.acard.active .ac-cnt{color:var(--bl)}
+.ac-drag{font-size:15px;color:#c8c8c0;line-height:1;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
+  touch-action:none;
+  cursor:grab;
+  padding:4px 2px;
+  border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  min-width:22px;min-height:22px;}
+.acard.active .ac-drag{color:#aac8e8}
+
+/* Main */
+#main{flex:1;overflow-y:auto;padding:9px;display:flex;flex-direction:column;gap:6px}
+#main::-webkit-scrollbar{width:4px}
+#main::-webkit-scrollbar-thumb{background:#ccc;border-radius:2px}
+
+/* Cards */
+.card{background:var(--card);border-radius:11px;border:1px solid var(--bdr);padding:10px 11px;display:flex;align-items:center;gap:9px}
+.card.nc{border-color:var(--bl);border-width:2px;animation:fb 5s ease forwards}
+@keyframes fb{0%,50%{border-color:var(--bl);border-width:2px}100%{border-color:var(--bdr);border-width:1px}}
+.ci{width:30px;height:30px;border-radius:50%;background:var(--bll);color:var(--bl);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cb{flex:1;min-width:0}
+.ca{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cbl{font-size:12px;color:var(--mut);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cn2{font-size:10px;color:#bbb;margin-top:1px}
+.cr{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+.code{font-family:'Courier New',monospace;font-size:15px;font-weight:700;background:var(--amb);color:var(--ambt);padding:4px 10px;border-radius:7px;cursor:pointer;-webkit-user-select:none;user-select:none;letter-spacing:.05em;border:1px solid #f0d8a0}
+.cas{display:flex;gap:3px}
+.bx{font-size:11px;padding:3px 7px;border-radius:6px;color:#555}
+.bxd{color:var(--red);border-color:#f0c0c0}
+.nb{font-size:9px;background:#e3f5e1;color:#1a7a1a;border:1px solid #b2dba8;border-radius:4px;padding:1px 5px;font-weight:700;vertical-align:middle;margin-left:4px}
+.empty{text-align:center;padding:60px 20px;color:#ccc;font-size:14px}
+
+/* Modal */
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#overlay.show{display:block}
+.oi{min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:20px 10px}
+#mbox{background:#fff;border-radius:18px;padding:18px 18px;max-width:500px;width:100%;margin:auto}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.mt{font-size:16px;font-weight:700}
+.mx{font-size:20px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#aaa;border-radius:50%}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:600;color:#666;margin-bottom:4px}
+.hint{font-size:11px;color:#aaa;margin-top:4px;line-height:1.5}
+.dup{font-size:12px;color:var(--red);font-weight:600;margin-top:4px}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid #f0f0ea}
+.bsave{background:var(--bl);color:#fff;border-color:var(--bl);font-weight:700;font-size:14px;padding:9px 22px;border-radius:10px}
+.bcancel{color:#666;border-color:#ddd}
+
+/* AI / OCR box */
+.aibox{background:#f5f8ff;border:1px solid #c5d5f5;border-radius:11px;padding:11px;margin-bottom:13px}
+.ait{font-size:11px;font-weight:700;color:var(--bl);margin-bottom:8px}
+.air{display:flex;gap:6px}
+.aib{flex:1;padding:8px;border-radius:9px;font-size:12px;font-weight:500;border:1px solid #c5d5f5;background:#fff;color:var(--bl);cursor:pointer}
+.aib.cam{background:var(--bl);color:#fff;border-color:var(--bl)}
+.aib:disabled{opacity:.4;cursor:default}
+.sp{width:14px;height:14px;border:2px solid #c5d5f5;border-top-color:var(--bl);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ast{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px;color:#555}
+.aok{font-size:12px;color:var(--grn);font-weight:600;margin-top:7px}
+.aerr{font-size:12px;color:var(--red);margin-top:7px}
+.aprev{margin-top:9px;max-height:80px;max-width:100%;border-radius:7px;display:block;border:1px solid var(--bdr);object-fit:contain}
+.ocr-raw{font-size:12px;background:#f8f8f5;border:1px solid var(--bdr);border-radius:8px;padding:9px 11px;margin-top:8px;white-space:pre-wrap;max-height:120px;overflow-y:auto;line-height:1.6;color:#444}
+.ocr-parsed{background:#f0f8ff;border:1px solid #c0d8f5;border-radius:8px;padding:9px 11px;margin-top:7px;font-size:12px;line-height:1.7}
+.ocr-parsed b{color:var(--bl)}
+.ocr-apply{margin-top:8px;background:var(--bl);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%}
+
+/* Sugg */
+.sugwrap{border:1px solid var(--bdr);border-radius:9px;margin-top:4px;overflow:hidden}
+.sugh{font-size:10px;padding:4px 10px;background:#f8f8f5;color:#bbb;font-weight:600}
+.sugr{padding:8px 11px;cursor:pointer;font-size:12px;border-bottom:1px solid #f5f5f0;display:flex;align-items:center;gap:7px}
+.sugr:last-child{border-bottom:none}
+.sugr:hover{background:#f2f6ff}
+.suga{font-weight:600}
+.sugb{color:#999;font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sugc{font-family:monospace;font-size:11px;background:var(--amb);color:var(--ambt);padding:2px 6px;border-radius:4px;flex-shrink:0}
+
+/* Batch tabs */
+.btabs{display:flex;gap:0;margin-bottom:13px;border:1px solid var(--bdr);border-radius:10px;overflow:hidden}
+.btab{flex:1;padding:8px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;background:#f8f8f5;color:var(--mut);border:none;border-radius:0}
+.btab.active{background:var(--bl);color:#fff}
+.btab:first-child{border-right:1px solid var(--bdr)}
+
+/* File drop zone */
+#bdz{border:2px dashed #c8c8c0;border-radius:12px;padding:22px 12px;text-align:center;cursor:pointer;color:var(--mut);font-size:13px;background:#fafaf8;margin-bottom:12px;transition:border-color .15s,background .15s}
+#bdz:hover,#bdz.over{border-color:var(--bl);background:var(--bll);color:var(--bl)}
+#bdz svg{margin:0 auto 8px;display:block;opacity:.4}
+.bfmt{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;margin-top:7px}
+.bfmt span{font-size:11px;background:#f0f0ea;color:#888;padding:2px 7px;border-radius:4px}
+
+/* Paste zone */
+.bpta{font-size:12px;line-height:1.7;min-height:110px;max-height:180px;overflow-y:auto;border-radius:9px;font-family:inherit;color:var(--txt);background:#fff;padding:9px 11px;border:1px solid var(--bdr);width:100%;resize:vertical}
+.bpth{font-size:11px;color:#aaa;margin-top:6px;line-height:1.6}
+.bparsebtn{background:var(--bl);color:#fff;border:none;border-radius:9px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
+
+/* Batch list */
+.bl2{display:flex;flex-direction:column;gap:4px;max-height:240px;overflow-y:auto;margin-bottom:12px}
+.bi{display:flex;align-items:center;gap:7px;border-radius:9px;padding:7px 9px;border:1px solid var(--bdr);font-size:12px}
+.bi.bok{background:#f3fbf3;border-color:#b5ddb5}
+.bi.bdup{background:#fff5f5;border-color:#f0c0c0}
+.bi.berr{background:#fff8f0;border-color:#f0d0a0}
+.bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dok{background:var(--grn)}.ddup{background:var(--red)}.derr{background:#cc8800}
+.baddr{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bbldg{font-size:11px;color:var(--mut)}
+.bcode{font-family:monospace;font-size:11px;background:var(--amb);color:var(--ambt);padding:1px 6px;border-radius:4px;flex-shrink:0}
+.btag{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0}
+.tok{background:#dff5df;color:#1a7a1a}.tdup{background:#ffe0e0;color:var(--red)}.terr{background:#fff0cc;color:#885500}
+.bst{font-size:12px;color:#555;margin-bottom:9px;line-height:1.7}
+
+/* Guide */
+.gs{display:flex;gap:10px;margin-bottom:12px}
+.gn{width:22px;height:22px;border-radius:50%;background:var(--bl);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.gtt{font-weight:600;font-size:13px;margin-bottom:2px}
+.gd{font-size:12px;color:#666;line-height:1.55}
+.wb{background:var(--amb);border-radius:9px;padding:10px 12px;font-size:11px;color:var(--ambt);line-height:1.65;margin-bottom:12px}
+.apisec{padding-top:12px;border-top:1px solid #f0f0ea}
+.apist{font-size:11px;margin-top:5px;font-weight:600}
+.agood{color:var(--grn)}.abad{color:#c87000}
+
+/* Toast */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(14px);background:#1a1a18;color:#fff;padding:9px 18px;border-radius:22px;font-size:13px;z-index:9999;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none;white-space:nowrap;font-weight:500}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--red)}
+
+@media(max-width:420px){:root{--sw:72px}}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="apptw">
+    <span class="appname">回家之路</span>
+    <span class="appcnt" id="hcnt"></span>
+  </div>
+  <div id="sw2">
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8.5" cy="8.5" r="5.5"/><line x1="13" y1="13" x2="17" y2="17"/></svg>
+    <input type="search" id="si" placeholder="住所・建物名・コード" oninput="onSrch(this.value)" autocomplete="off" spellcheck="false">
+  </div>
+  <button id="menubtn" onclick="toggleMenu()">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+</div>
+
+<div id="dov" onclick="closeMenu()"></div>
+<div id="dropmenu">
+  <div class="dmi" onclick="menuAct('batch')"><span style="font-size:16px;width:18px;text-align:center">📄</span><span>一括取込</span></div>
+  <div class="dmi" onclick="menuAct('export')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>バックアップ</span></div>
+  <div class="dmi" onclick="menuAct('import')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>復元（JSON）</span></div>
+  <div class="dmi" onclick="menuAct('guide')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>設定 / 機種変更</span></div>
+</div>
+
+<div id="body">
+  <div id="sidebar">
+    <div class="sb-hdr"><span>エリア</span><span class="sb-hint">長押並替</span></div>
+    <div id="alist"></div>
+  </div>
+  <div id="main"></div>
+</div>
+
+<div id="overlay" onclick="bgClick(event)"><div class="oi"><div id="mbox"></div></div></div>
+<div id="toast"></div>
+<!-- File inputs for OCR -->
+<input type="file" id="icam" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="ocrpick" accept="image/*" style="display:none">
+<button onclick="openM('new')" style="position:fixed;bottom:20px;right:14px;z-index:190;background:var(--bl);color:#fff;border:none;border-radius:14px;padding:12px 18px;font-size:15px;font-weight:700;box-shadow:0 4px 16px rgba(24,95,165,.35)">＋ 追加</button>
+
+<script>
+// ── Utilities ──────────────────────────────────────────────────────────────────
+function toH(s){return(s||'').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[－ーｰ‐—―−]/g,'-').replace(/\u3000/g,' ').replace(/^東京都/,'').replace(/^墨田区/,'').trim();}
+function pA(inp){const s=toH(inp||'');for(const p of[/^(.+?)\s*(\d+)丁目\s*(\d+)-(\d+)$/,/^(.+?)\s*(\d+)丁目\s*(\d+)番地?(\d+)号?$/,/^(.+?)\s+(\d+)-(\d+)-(\d+)$/,/^(.+?)(\d+)-(\d+)-(\d+)$/]){const m=s.match(p);if(m){const[,area,c,b,g]=m;return{area:area.trim(),chome:+c,banchi:+b,go:+g,normalized:`${area.trim()}${c}-${b}-${g}`};}}return{area:s,chome:0,banchi:0,go:0,normalized:s};}
+function sRecs(r){return[...r].sort((a,b)=>a.area.localeCompare(b.area,'ja')||a.chome-b.chome||a.banchi-b.banchi||a.go-b.go);}
+function stripRm(s){return(s||'').replace(/\s*[-\s]?\d{3,4}(号室?)?$/,'').trim();}
+function mkR(raw){const p=pA(raw.raw_addr||'');return{id:raw.id||Date.now(),raw_addr:(raw.raw_addr||'').trim(),building:(raw.building||'').trim(),code:String(raw.code||'').replace(/\.0$/,'').trim(),notes:raw.notes||'',updated:new Date().toISOString().split('T')[0],lastUsed:null,...p};}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function sM(r,q){return toH([r.raw_addr,r.normalized,r.building,r.code,r.notes].join(' ')).toLowerCase().replace(/\s/g,'').includes(q);}
+
+// ── Storage ────────────────────────────────────────────────────────────────────
+const LK='kaerinoie:v2',LO='kaerinoie:areaOrder';
+let G={records:[],srch:'',area:'all',newId:null,modal:null,eform:null,ocrSt:'idle',ocrText:'',ocrParsed:null,batch:[],batchTab:'file'};
+function lL(){try{const s=localStorage.getItem(LK);if(s){const p=JSON.parse(s);if(Array.isArray(p)&&p.length)return sRecs(p);}}catch{}return null;}
+function lS(r){try{localStorage.setItem(LK,JSON.stringify(r));}catch{}}
+function loadOrder(){try{const s=localStorage.getItem(LO);if(s)return JSON.parse(s);}catch{}return[];}
+function saveOrder(o){try{localStorage.setItem(LO,JSON.stringify(o));}catch{}}
+function getOA(){const c={};G.records.forEach(r=>{c[r.area]=(c[r.area]||0)+1;});const all=Object.keys(c);const o=[];G.areaOrder.forEach(a=>{if(c[a])o.push(a);});all.sort((a,b)=>a.localeCompare(b,'ja')).forEach(a=>{if(!o.includes(a))o.push(a);});if(JSON.stringify(G.areaOrder)!==JSON.stringify(o)){G.areaOrder=o;saveOrder(o);}return{c,o};}
+
+// ── Seed ───────────────────────────────────────────────────────────────────────
+const SEED=[{id:1,raw_addr:'東向島1-10-18',building:'シュシュ向島',code:'0927'},{id:2,raw_addr:'東向島1-14-7',building:'craft東向島',code:'0120'},{id:3,raw_addr:'東向島1-24-11',building:'ライムレジデンス曳舟',code:'呼1234'},{id:4,raw_addr:'東向島2-14-2',building:'メゾン・アイナ',code:'1026'},{id:5,raw_addr:'東向島2-31-10',building:'ガーデンひきふね',code:'1000'},{id:6,raw_addr:'東向島2-34-18',building:'東向島サニーホームズ',code:'3246E'},{id:7,raw_addr:'東向島2-34-3',building:'レジェンド東向島',code:'0123'},{id:8,raw_addr:'東向島2-39-10',building:'ナンカイパートワン',code:'0123'},{id:9,raw_addr:'東向島2-46-2',building:'秋桜ハウス',code:'3721'},{id:10,raw_addr:'東向島2-49-7',building:'アルコバレーノ東向島',code:'8571'},{id:11,raw_addr:'東向島2-6-6',building:'プランドールメゾン二番館',code:'1121'},{id:12,raw_addr:'東向島2-6-7',building:'プランドールメゾン1番館',code:'1111'},{id:13,raw_addr:'東向島2-8-7',building:'メゾン目黒',code:'3751'},{id:14,raw_addr:'東向島3-17-8',building:'ハーモニーレジデンス東京',code:'6548'},{id:15,raw_addr:'東向島3-9-2',building:'チェリーピア21',code:'4312'},{id:16,raw_addr:'東向島4-10-1',building:'セルピエンテ',code:'1230'},{id:17,raw_addr:'東向島4-13-12',building:'リンデンバーム',code:'0305'},{id:18,raw_addr:'東向島4-20-4',building:'orbel',code:'3470'},{id:19,raw_addr:'東向島4-25-16',building:'',code:'0123'},{id:20,raw_addr:'東向島4-25-19',building:'ソレイユ',code:'8010'},{id:21,raw_addr:'東向島4-25-2',building:'shino 35',code:'3309'},{id:22,raw_addr:'東向島4-25-21',building:'SHINO36BLDG',code:'3309'},{id:23,raw_addr:'東向島4-25-5',building:'アイコトート',code:'2008'},{id:24,raw_addr:'東向島4-27-16',building:'ラフィーネ東向島',code:'9999'},{id:25,raw_addr:'東向島4-28-11',building:'プレール・ドゥーク東向島',code:'2804'},{id:26,raw_addr:'東向島4-32-9',building:'カーサグラン東向島',code:'1234'},{id:27,raw_addr:'東向島4-34-4',building:'TOKIO東向島',code:'0390'},{id:28,raw_addr:'東向島4-43-10',building:'ホワイトハイム白鬚',code:'呼99999'},{id:29,raw_addr:'東向島4-43-6',building:'エスカノイエ東向島',code:'0827'},{id:30,raw_addr:'東向島5-19-14',building:'インプルーブ東向島',code:'9131'},{id:31,raw_addr:'東向島5-3-20',building:'アムール東向島',code:'9087'},{id:32,raw_addr:'東向島5-31-2',building:'Ludens東向島MAXIV',code:'1111'},{id:33,raw_addr:'東向島5-36-1',building:'フィエルテ東向島',code:'2024'},{id:34,raw_addr:'東向島5-37-9',building:'カーサフィオーレ東向島',code:'5108'},{id:35,raw_addr:'東向島5-39-14',building:'ハーモニーレジデンス東京EAST',code:'6548'},{id:36,raw_addr:'東向島5-41-3',building:'Genovia東向島3skygarden',code:'1192'},{id:37,raw_addr:'東向島6-1-5',building:'アイル東京向島参番館',code:'5963'},{id:38,raw_addr:'東向島6-14-8',building:'スカイメゾン',code:'1234'},{id:39,raw_addr:'東向島6-21-2',building:'メゾン東向島',code:'3325'},{id:40,raw_addr:'東向島6-23-4',building:'ミルト東向島',code:'0620'},{id:41,raw_addr:'東向島6-25-6',building:'ジョワドヴィーヴル',code:'5472'},{id:42,raw_addr:'東向島6-27-7',building:'ラディエプラージュ',code:'5963'},{id:43,raw_addr:'東向島6-31-3',building:'ロイヤルパーク東向島',code:'1234'},{id:44,raw_addr:'東向島6-34-18',building:'ホーユウコンフォルト東向島',code:'*9811'},{id:45,raw_addr:'東向島6-34-4',building:'Repure ResidenceII',code:'5963'},{id:46,raw_addr:'東向島6-35-4',building:'シティパル',code:'0110'},{id:47,raw_addr:'東向島6-36-2',building:'ウェルフェア',code:'7856'},{id:48,raw_addr:'東向島6-38-3',building:'アイルイムーブル向島',code:'5140'},{id:49,raw_addr:'東向島6-46-10',building:'シャンテ東向島Ⅱ',code:'1234'},{id:50,raw_addr:'東向島6-47-9',building:'Purrusian',code:'4134'},{id:51,raw_addr:'東向島6-48-20',building:'',code:'8972'},{id:52,raw_addr:'東向島6-48-8',building:'シャーメゾン東向島s',code:'*1234'},{id:53,raw_addr:'東向島6-51-2',building:'アールデコ東向島Ⅱ',code:'0141'},{id:54,raw_addr:'東向島6-53-17',building:'レリア東向島',code:'1234'},{id:55,raw_addr:'東向島6-61-4',building:'SHIRO',code:'1111'},{id:56,raw_addr:'東向島6-9-13',building:'MTビル',code:'5963'},{id:57,raw_addr:'東向島6-9-5',building:'シャンブル向島',code:'5963'},{id:58,raw_addr:'吾妻橋3-4-2',building:'スカイフラッツ吾妻橋',code:'1234'},{id:59,raw_addr:'吾妻橋3-7-13',building:'クレストコート吾妻橋レジデンス',code:'7669'},{id:60,raw_addr:'向島1-10-6',building:'スカイコートtokyoスカイツリー',code:'1234'},{id:61,raw_addr:'向島1-15-5',building:"B'casa Mukojima",code:'1234'},{id:62,raw_addr:'向島1-18-6',building:'',code:'呼5963'},{id:63,raw_addr:'向島1-21-2',building:'',code:'2807'},{id:64,raw_addr:'向島1-22-6',building:'イニシア墨田押上',code:'5963'},{id:65,raw_addr:'向島1-24-16',building:'Mill押上',code:'5963'},{id:66,raw_addr:'向島1-25-13',building:'新東京タワーレジデンス',code:'呼1713'},{id:67,raw_addr:'向島1-25-15',building:'サンライズ向島',code:'5963'},{id:68,raw_addr:'向島1-26-7',building:'メゾンドボクスイ',code:'9999'},{id:69,raw_addr:'向島1-26-7',building:'メゾンドコウメ',code:'5920'},{id:70,raw_addr:'向島1-30-9',building:'メゾンSKMスカイツリー',code:'5963'},{id:71,raw_addr:'向島1-9-7',building:'ホタカリュミエールイワタ',code:'???'},{id:72,raw_addr:'向島2-11-10',building:'バニアンガーデン押上',code:'呼5209'},{id:73,raw_addr:'向島2-12-12',building:'',code:'呼5963'},{id:74,raw_addr:'向島2-17-6',building:'デラフェリチタ',code:'呼出1234'},{id:75,raw_addr:'向島2-20-9',building:'レクシオ向島',code:'7305'},{id:76,raw_addr:'向島2-5-9',building:'アルブル セレスト',code:'呼7455'},{id:77,raw_addr:'向島2-9-2',building:'アリュール押上',code:'呼1234'},{id:78,raw_addr:'向島3-10-8',building:'若草向島館',code:'3108'},{id:79,raw_addr:'向島3-14-13',building:'H.Aスカイ',code:'9684'},{id:80,raw_addr:'向島3-15-16',building:'リバーサイド向島',code:'2072'},{id:81,raw_addr:'向島3-26-10',building:'アイ・ステージ向島',code:'呼6150'},{id:82,raw_addr:'向島3-26-11',building:'メルベーユ・ｄｉｘ',code:'2974'},{id:83,raw_addr:'向島3-3-1',building:'ミリアレジデンス押上',code:'呼3025'},{id:84,raw_addr:'向島3-3-7',building:'グリーンパーク新向島',code:'呼1234'},{id:85,raw_addr:'向島3-30-1',building:'Liberte Skytree East',code:'5963'},{id:86,raw_addr:'向島3-34-3',building:'アピジ小梅向島',code:'1017'},{id:87,raw_addr:'向島3-36-2',building:'パークヴィラ押上',code:'1234'},{id:88,raw_addr:'向島3-4-1',building:'メゾンtmd',code:'呼5963'},{id:89,raw_addr:'向島3-4-3',building:'パインセンターハイツ向島',code:'5963'},{id:90,raw_addr:'向島3-4-3',building:'S-residence押上clair',code:'呼5220'},{id:91,raw_addr:'向島3-5-1',building:'エルセレーノ押上',code:'米1234呼'},{id:92,raw_addr:'向島3-8-3',building:'ヴォーガコルテ東京スカイツリー',code:'5963'},{id:93,raw_addr:'向島4-19-2',building:'NINEDOORS',code:'*1234呼'},{id:94,raw_addr:'向島4-20-16',building:'ブルームタワー押上',code:'4126'},{id:95,raw_addr:'向島4-21-10',building:'カーサヴェルデ高津',code:'呼1942'},{id:96,raw_addr:'向島5-18-6',building:'',code:'呼5546'},{id:97,raw_addr:'向島5-29-13',building:'ヴィラスカイツリーパート3',code:'0912'},{id:98,raw_addr:'向島5-31-1',building:'レアライズ押上ii',code:'5963'},{id:99,raw_addr:'向島5-33-5',building:'アリカ向島',code:'呼5963'},{id:100,raw_addr:'向島5-33-7',building:'Ar向島',code:'呼5963'},{id:101,raw_addr:'向島5-38-6',building:'ディアレイシャス押上桜橋2',code:'0450'},{id:102,raw_addr:'向島5-43-14',building:'シーフォルムネクスト向島',code:'4545'},{id:103,raw_addr:'向島5-45-10',building:'リエトコート向島',code:'*5963呼出'},{id:104,raw_addr:'押上1-39-5',building:'リブレ・ハルミ',code:'呼1234'},{id:105,raw_addr:'押上1-45-4',building:'ラグラース押上ii',code:'#5963'},{id:106,raw_addr:'押上1-45-7',building:'スカイツリープレイス',code:'0204'},{id:107,raw_addr:'押上1-50-6',building:'アイルカナーレ',code:'0843'},{id:108,raw_addr:'押上2-2-1',building:'小梅サンエムコーポ',code:'1342'},{id:109,raw_addr:'押上2-9-20',building:'ラ・ブークル',code:'呼1111'},{id:110,raw_addr:'押上3-19-14',building:'サンハイム',code:'1234'},{id:111,raw_addr:'押上3-23-6',building:'ファインクレスト押上',code:'呼1000'},{id:112,raw_addr:'押上3-39-7',building:'フェリオ',code:'3397'},{id:113,raw_addr:'押上3-38-2',building:'Maison S・e',code:'0123'},{id:114,raw_addr:'京島1-42-2',building:'グレースハイム',code:'1234'},{id:115,raw_addr:'京島1-43-4',building:'パークサイド曳舟',code:'2525'},{id:116,raw_addr:'京島1-44-1',building:'Bless曳舟',code:'呼5963'},{id:117,raw_addr:'京島1-47-12',building:'',code:'6548'},{id:118,raw_addr:'京島3-10-3',building:'タック曳舟',code:'2647'},{id:119,raw_addr:'京島3-32-9',building:'グランメゾン京島',code:'0123'},{id:120,raw_addr:'京島3-58-14',building:'ヴィラコート',code:'7341'},{id:121,raw_addr:'八広1-10-11',building:'',code:'呼5963'},{id:122,raw_addr:'八広1-14-9',building:"P'z CUBE",code:'0185'},{id:123,raw_addr:'八広1-15-14',building:'パルティール曳舟',code:'1234呼'},{id:124,raw_addr:'八広1-2-11',building:'サンステージ曳舟',code:'5678'},{id:125,raw_addr:'八広1-25-1',building:'スタシオン曳舟',code:'7358'},{id:126,raw_addr:'八広1-25-12',building:'きんでん曳舟寮',code:'5963'},{id:127,raw_addr:'八広1-3-2',building:'アイルプレミアム押上ノース',code:'5140'},{id:128,raw_addr:'八広1-37-10',building:'ルソレイユ',code:'5963'},{id:129,raw_addr:'八広1-41-7',building:'八広オーブハイツii',code:'5546'},{id:130,raw_addr:'八広1-42-7',building:'Tsイースティア',code:'9584'},{id:131,raw_addr:'八広1-9-10',building:'アクシス墨田',code:'呼1234'},{id:132,raw_addr:'八広1-9-4',building:'シャーブルック',code:'5963'},{id:133,raw_addr:'八広2-14-7',building:'エーデルハイム石澤',code:'1239'},{id:134,raw_addr:'八広2-38-11',building:'パティーナ曳舟',code:'呼1234'},{id:135,raw_addr:'八広2-4-15',building:'Gloria-K',code:'1031'},{id:136,raw_addr:'八広2-56-5',building:'エストゥルースプラス八広',code:'1234'},{id:137,raw_addr:'八広3-17-11',building:'Dips墨田eastii',code:'0129'},{id:138,raw_addr:'八広3-31-12',building:'サニーコート向島',code:'1234'},{id:139,raw_addr:'八広4-10-8',building:'シャーメゾン金井',code:'0438'},{id:140,raw_addr:'八広5-6-6',building:'SRS八広',code:'1314'},{id:141,raw_addr:'八広6-29-8',building:'メープル3',code:'1230'},{id:142,raw_addr:'八広6-5-3',building:'',code:'2021'},{id:143,raw_addr:'東墨田2-1-10',building:'アヴェニーユ参番館(3rd)',code:'5123'},{id:144,raw_addr:'東墨田2-27-2',building:'',code:'呼5963'},{id:145,raw_addr:'東墨田3-21-6',building:'レオパレスミルガール',code:'#4153'},{id:146,raw_addr:'文花1-17-2',building:'アデッソ押上',code:'5300'},{id:147,raw_addr:'文花1-4-4',building:'ヒマモワ',code:'0119'},{id:148,raw_addr:'文花2-9-14',building:'メゾンエスドゥフォレ',code:'*1234呼'},{id:149,raw_addr:'亀戸3-25-2',building:'D-room天神',code:'※1234'},{id:150,raw_addr:'亀戸3-8-4',building:'クレアメゾン天神橋',code:'1234'},{id:151,raw_addr:'亀戸4-28-13',building:'クレヴィスタ亀戸2',code:'呼1234'},{id:152,raw_addr:'業平2-17-1',building:'グレイスフルサカイ',code:'110'},{id:153,raw_addr:'業平3-17-9',building:'マルホンビル',code:'1123'},{id:154,raw_addr:'立花1-34-16',building:'リビエラヴィラージュ',code:'0123'},{id:155,raw_addr:'立花5-16-1',building:'プラムハイツ',code:'1991'}].map(r=>mkR(r));
+
+(function(){G.records=lL()||sRecs(SEED);G.areaOrder=loadOrder();renderAll();})();
+
+// ── Menu ───────────────────────────────────────────────────────────────────────
+function toggleMenu(){const dm=document.getElementById('dropmenu'),dov=document.getElementById('dov'),btn=document.getElementById('menubtn');const open=dm.classList.contains('show');if(open)closeMenu();else{dm.classList.add('show');dov.classList.add('show');btn.classList.add('open');}}
+function closeMenu(){document.getElementById('dropmenu').classList.remove('show');document.getElementById('dov').classList.remove('show');document.getElementById('menubtn').classList.remove('open');}
+function menuAct(a){closeMenu();if(a==='batch')openM('batch');else if(a==='export')doExp();else if(a==='import')trigImp();else if(a==='guide')openM('guide');}
+
+// ── Render ─────────────────────────────────────────────────────────────────────
+function renderAll(){renderSB();renderMain();}
+function renderSB(){
+  const {c,o}=getOA();
+  let h=`<div class="acard${G.area==='all'?' active':''}" onclick="setArea('all')"><div class="ac-name">全て</div><div class="ac-bot"><span class="ac-cnt">${G.records.length}</span></div></div>`;
+  o.forEach(a=>{const act=G.area===a?' active':'';h+=`<div class="acard${act}" data-area="${esc(a)}" draggable="true" ondragstart="dgs(event,'${esc(a)}')" ondragover="dgo(event)" ondragleave="dgl(event)" ondrop="dgd(event,'${esc(a)}')" ondragend="dge(event)" onclick="setArea('${esc(a)}')"><div class="ac-name">${esc(a)}</div><div class="ac-bot"><span class="ac-cnt">${c[a]||0}</span><span class="ac-drag" id="drag-${esc(a)}">⠿</span></div></div>`;});
+  document.getElementById('alist').innerHTML=h;
+  document.getElementById('hcnt').textContent=`${G.records.length}件`;
+  // Attach touch handlers after render
+  o.forEach(a=>{const el=document.getElementById('drag-'+a);if(el)el.addEventListener('touchstart',e=>touchDS(e,a),{passive:false});});
+}
+function renderMain(){
+  const q=toH(G.srch).toLowerCase().replace(/\s/g,'');
+  let list=G.records;if(G.area!=='all')list=list.filter(r=>r.area===G.area);if(q)list=list.filter(r=>sM(r,q));list=sRecs(list);
+  if(!list.length){document.getElementById('main').innerHTML=`<div class="empty">${G.srch?'検索結果がありません':'データがありません'}</div>`;return;}
+  document.getElementById('main').innerHTML=list.map(r=>{const isN=r.id===G.newId;const bldg=r.building||'<span style="color:#ccc">建物名なし</span>';const nb=isN?'<span class="nb">NEW</span>':'';return`<div class="card${isN?' nc':''}" id="card-${r.id}"><div class="ci">${r.area.charAt(0)||'?'}</div><div class="cb"><div class="ca">${esc(r.normalized)}${nb}</div><div class="cbl">${bldg}</div>${r.notes?`<div class="cn2">${esc(r.notes)}</div>`:''}</div><div class="cr"><div class="code" onclick="cpCode('${esc(r.code)}','${r.id}')">${esc(r.code)}</div><div class="cas"><button class="bx" onclick="cpAddr('${esc(r.normalized)}','${r.id}')">住所</button><button class="bx" onclick="openM('edit',${r.id})">編集</button><button class="bx bxd" onclick="openM('del',${r.id})">削除</button></div></div></div>`;}).join('');
+}
+
+// ── Drag (desktop) ─────────────────────────────────────────────────────────────
+let _ds=null;
+function dgs(e,a){_ds=a;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function dge(e){e.currentTarget.classList.remove('dragging','drag-over');}
+function dgo(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
+function dgl(e){e.currentTarget.classList.remove('drag-over');}
+function dgd(e,t){e.preventDefault();e.currentTarget.classList.remove('drag-over');if(!_ds||_ds===t)return;const o=[...G.areaOrder];const fi=o.indexOf(_ds),ti=o.indexOf(t);if(fi<0||ti<0)return;o.splice(fi,1);o.splice(ti,0,_ds);G.areaOrder=o;saveOrder(o);_ds=null;renderSB();}
+
+// ── Drag (touch) — drag handle only, no text selection ────────────────────────
+let _td=null,_tc=null,_ti=null,_tt=null;
+function touchDS(e,a){
+  e.preventDefault();e.stopPropagation();  // prevent long-press menu
+  _td=a;
+  const card=e.currentTarget.closest('.acard');
+  _ti=document.querySelectorAll('#alist .acard[data-area]');
+  _tc=card.cloneNode(true);
+  const r=card.getBoundingClientRect();
+  Object.assign(_tc.style,{position:'fixed',left:r.left+'px',top:r.top+'px',width:r.width+'px',opacity:'.75',pointerEvents:'none',zIndex:'9998',borderColor:'var(--bl)',background:'var(--bll)',margin:'0',boxSizing:'border-box'});
+  document.body.appendChild(_tc);
+  document.addEventListener('touchmove',onTM,{passive:false});
+  document.addEventListener('touchend',onTE,{once:true});
+}
+function onTM(e){
+  e.preventDefault();
+  const t=e.touches[0];
+  _tc.style.left=(t.clientX-parseInt(_tc.style.width)/2)+'px';
+  _tc.style.top=(t.clientY-20)+'px';
+  _tt=null;
+  _ti.forEach(el=>{el.classList.remove('drag-over');const r=el.getBoundingClientRect();if(t.clientX>=r.left&&t.clientX<=r.right&&t.clientY>=r.top&&t.clientY<=r.bottom){_tt=el.dataset.area;el.classList.add('drag-over');}});
+}
+function onTE(){
+  document.removeEventListener('touchmove',onTM);
+  if(_tc){_tc.remove();_tc=null;}
+  if(_ti)_ti.forEach(el=>el.classList.remove('drag-over'));
+  if(_td&&_tt&&_td!==_tt){const o=[...G.areaOrder];const fi=o.indexOf(_td),ti=o.indexOf(_tt);if(fi>=0&&ti>=0){o.splice(fi,1);o.splice(ti,0,_td);}G.areaOrder=o;saveOrder(o);}
+  _td=null;_tt=null;renderSB();
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────────
+function setArea(a){G.area=a;renderAll();}
+function onSrch(v){G.srch=v;renderMain();}
+function cpCode(c,id){navigator.clipboard.writeText(c).then(()=>{toast('コード コピー完了');touch(id);}).catch(()=>toast('失敗',true));}
+function cpAddr(a,id){navigator.clipboard.writeText(a).then(()=>{toast('住所 コピー完了');touch(id);}).catch(()=>toast('失敗',true));}
+function touch(id){G.records=G.records.map(r=>r.id==id?{...r,lastUsed:new Date().toISOString()}:r);lS(G.records);}
+
+// ── Export / Import ────────────────────────────────────────────────────────────
+function doExp(){const blob=new Blob([JSON.stringify({version:3,exported:new Date().toISOString(),count:G.records.length,records:G.records},null,2)],{type:'application/json'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=`回家之路_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(u);toast('バックアップ完了');}
+
+function trigImp(){
+  const inp=document.getElementById('batchf'); // reuse for restore too, single-select
+  // Use a fresh dedicated input for JSON restore
+  const el=document.createElement('input');el.type='file';el.accept='.json';el.style.display='none';
+  el.addEventListener('change',()=>{if(el.files[0])doRestoreJSON(el.files[0]);el.remove();});
+  document.body.appendChild(el);el.click();
+}
+function doRestoreJSON(file){
+  const r=new FileReader();r.onerror=()=>toast('ファイルエラー',true);
+  r.onload=e=>{try{const raw=JSON.parse(e.target.result);const arr=Array.isArray(raw)?raw:Array.isArray(raw.records)?raw.records:null;if(!arr||!arr.length){toast('データなし',true);return;}G.records=sRecs(arr.map(r=>mkR(r)));lS(G.records);renderAll();toast(`${G.records.length}件 復元完了`);}catch{toast('JSON解析エラー',true);}};
+  r.readAsText(file,'UTF-8');
+}
+
+let _tti=null;
+function toast(msg,err=false){const el=document.getElementById('toast');el.textContent=msg;el.className='show'+(err?' err':'');clearTimeout(_tti);_tti=setTimeout(()=>{el.className='';},2400);}
+
+// ── Modal ──────────────────────────────────────────────────────────────────────
+function openM(type,id){
+  G.modal=type;G.ocrSt='idle';G.ocrText='';G.ocrParsed=null;G.batch=[];G.batchTab='file';
+  if(type==='new')G.eform={raw_addr:'',building:'',code:'',notes:'',id:null};
+  else if(type==='edit'){const r=G.records.find(r=>r.id==id);if(!r)return;G.eform={...r};}
+  else if(type==='del')G.eform={id};
+  renderM();document.getElementById('overlay').className='show';
+}
+function closeM(){document.getElementById('overlay').className='';G.modal=null;G.eform=null;}
+function bgClick(e){if(e.target===document.getElementById('overlay'))closeM();}
+function renderM(){const fn={new:bldEdit,edit:bldEdit,del:bldDel,guide:bldGuide,batch:bldBatch}[G.modal];if(fn)document.getElementById('mbox').innerHTML=fn();if(G.modal==='batch')setupBatchDrop();}
+
+// ── Edit Modal ─────────────────────────────────────────────────────────────────
+function bldEdit(){
+  const f=G.eform,isN=G.modal==='new';
+  const p=f.raw_addr?pA(f.raw_addr):null;const dups=p?findD(p.normalized,f.id):[];
+  const dupH=dups.length?`<div class="dup">⚠ 既に登録済み：${dups.map(r=>r.building||r.normalized).join('、')}</div>`:'';
+  const adH=p&&p.area?`<div class="hint">→ ${p.normalized}（${p.area} ${p.chome}丁目 ${p.banchi}番 ${p.go}号）</div>`:'';
+  // OCR section
+  const ocrBusy=G.ocrSt==='loading'||G.ocrSt==='running';
+  let ocrOut='';
+  if(G.ocrSt==='done'&&G.ocrText){
+    ocrOut=`<div class="ocr-raw">${esc(G.ocrText)}</div>`;
+    if(G.ocrParsed){const p2=G.ocrParsed;ocrOut+=`<div class="ocr-parsed"><b>住所:</b> ${esc(p2.address||'—')}<br><b>建物:</b> ${esc(p2.building||'—')}<br><b>コード:</b> ${esc(p2.code||'—')}</div><button class="ocr-apply" onclick="applyOCR()">この内容をフォームに反映する</button>`;}
+  }else if(G.ocrSt==='error'){ocrOut=`<div class="aerr">OCR失敗。別の画像をお試しください</div>`;}
+  else if(ocrBusy){ocrOut=`<div class="ast"><div class="sp"></div>${G.ocrSt==='loading'?'OCRエンジン読み込み中... (初回は20〜30秒かかります)':'日本語テキスト認識中...'}</div>`;}
+
+  return`<div class="mh"><div class="mt">${isN?'新規追加':'記録を編集'}</div><button class="mx" onclick="closeM()">×</button></div>
+  <div class="aibox" style="background:#f5fff8;border-color:#b5ddb5">
+    <div class="ait" style="color:#1a7a1a">写真から自動入力（OCR）</div>
+    <div class="air"><button class="aib" style="color:#1a7a1a;border-color:#b5ddb5" ${ocrBusy?'disabled':''} onclick="trigOCR('cam')">カメラ撮影</button><button class="aib" style="color:#1a7a1a;border-color:#b5ddb5" ${ocrBusy?'disabled':''} onclick="trigOCR('pick')">画像を選択</button></div>
+    ${ocrOut}
+  </div>
+  <div class="field"><label>住所 *</label><input id="fa" value="${esc(f.raw_addr)}" placeholder="東向島6-38-3" oninput="onAI(this.value)" autocomplete="off">${adH}${dupH}<div id="sbox"></div></div>
+  <div class="field"><label>建物名</label><input id="fb" value="${esc(f.building)}" placeholder="マンション名（部屋番号不要）" autocomplete="off"></div>
+  <div class="field"><label>アクセスコード *</label><input id="fc" value="${esc(f.code)}" placeholder="5140 / 呼1234 / *5963" style="font-family:monospace;font-size:17px;font-weight:700;letter-spacing:.06em"></div>
+  <div class="field"><label>備考</label><textarea id="fn" rows="2">${esc(f.notes||'')}</textarea></div>
+  <div class="mf"><button class="bcancel" onclick="closeM()">キャンセル</button><button class="bsave" onclick="subF()">保存する</button></div>`;
+}
+
+function trigOCR(mode){
+  const inp=document.getElementById(mode==='cam'?'icam':'ocrpick');inp.value='';
+  inp.onchange=e=>{handleOCRImg(e.target.files[0]);};inp.click();
+}
+
+function onAI(val){
+  G.eform.raw_addr=val;const p=pA(val);
+  const inp=document.getElementById('fa');if(!inp)return;
+  inp.parentNode.querySelectorAll('.hint,.dup').forEach(e=>e.remove());
+  const adH=p&&p.area?`<div class="hint">→ ${p.normalized}（${p.area} ${p.chome}丁目 ${p.banchi}番 ${p.go}号）</div>`:'';
+  const dups=p?findD(p.normalized,G.eform.id):[];
+  const dupH=dups.length?`<div class="dup">⚠ 既に登録済み：${dups.map(r=>r.building||r.normalized).join('、')}</div>`:'';
+  inp.insertAdjacentHTML('afterend',adH+dupH);
+  const sb=document.getElementById('sbox');if(!sb||val.length<=2){if(sb)sb.innerHTML='';return;}
+  const q=toH(val).toLowerCase().replace(/\s/g,'');
+  const hits=G.records.filter(r=>{if(r.id===G.eform.id)return false;const h=toH(r.normalized+r.building).toLowerCase().replace(/\s/g,'');return h.includes(q)||q.includes(h.slice(0,Math.max(q.length-1,3)));}).slice(0,4);
+  sb.innerHTML=hits.length?`<div class="sugwrap"><div class="sugh">類似住所（タップで入力）</div>${hits.map((r,i)=>`<div class="sugr" onclick="apS(${i})"><span class="suga">${esc(r.normalized)}</span><span class="sugb">${esc(r.building)}</span><span class="sugc">${esc(r.code)}</span></div>`).join('')}</div>`:'';
+  if(hits.length)sb._h=hits;
+}
+function apS(i){const sb=document.getElementById('sbox');if(!sb||!sb._h)return;const r=sb._h[i];['fa','fb','fc'].forEach((id,j)=>{const el=document.getElementById(id);if(el)el.value=[r.raw_addr,r.building,r.code][j];});Object.assign(G.eform,{raw_addr:r.raw_addr,building:r.building,code:r.code});sb.innerHTML='';}
+function findD(norm,exId){return G.records.filter(r=>r.normalized===norm&&r.id!=exId);}
+function subF(){
+  const addr=(document.getElementById('fa').value||'').trim();const bldg=stripRm((document.getElementById('fb').value||'').trim());const code=(document.getElementById('fc').value||'').trim();const notes=(document.getElementById('fn').value||'').trim();
+  if(!addr){toast('住所を入力してください',true);return;}if(!code){toast('アクセスコードを入力してください',true);return;}
+  const p=pA(addr);const today=new Date().toISOString().split('T')[0];const isEdit=G.eform.id&&G.records.find(r=>r.id===G.eform.id);
+  if(isEdit){G.records=G.records.map(r=>r.id===G.eform.id?{...r,...p,raw_addr:addr,building:bldg,code,notes,updated:today}:r);G.newId=G.eform.id;lS(G.records);closeM();renderAll();toast('更新しました');}
+  else{const nid=Math.max(0,...G.records.map(r=>r.id))+1;G.records=sRecs([...G.records,{...mkR({raw_addr:addr,building:bldg,code,notes,id:nid}),...p,updated:today}]);G.newId=nid;lS(G.records);closeM();renderAll();toast('追加しました ✓');setTimeout(()=>{const el=document.getElementById(`card-${nid}`);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},80);setTimeout(()=>{G.newId=null;renderMain();},6000);}
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────────
+function bldDel(){const r=G.records.find(r=>r.id===G.eform.id);if(!r)return'';return`<div class="mh"><div class="mt">削除の確認</div><button class="mx" onclick="closeM()">×</button></div><div class="field"><div style="font-weight:700;font-size:15px;margin-bottom:4px">${esc(r.normalized)}</div><div style="font-size:13px;color:var(--mut);margin-bottom:4px">${esc(r.building||'建物名なし')} — ${esc(r.code)}</div><div style="font-size:13px;color:var(--red)">この操作は元に戻せません。</div></div><div class="mf"><button class="bcancel" onclick="closeM()">キャンセル</button><button style="background:var(--red);color:#fff;border:none;font-weight:700;font-size:14px;padding:9px 20px;border-radius:10px" onclick="confDel()">削除する</button></div>`;}
+function confDel(){G.records=G.records.filter(r=>r.id!==G.eform.id);lS(G.records);closeM();renderAll();toast('削除しました');}
+
+// ── Local OCR (Tesseract.js v4) ────────────────────────────────────────────────
+function loadTesseract(){
+  return new Promise((res,rej)=>{
+    if(window.Tesseract){res();return;}
+    const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/tesseract.js@4.1.4/dist/tesseract.min.js';
+    s.onload=()=>res();s.onerror=()=>rej(new Error('OCRライブラリの読み込みに失敗。オンライン状態を確認してください'));document.head.appendChild(s);
+  });
+}
+async function handleOCRImg(file){
+  if(!file)return;
+  G.ocrSt='loading';G.ocrText='';G.ocrParsed=null;renderM();
+  try{
+    await loadTesseract();
+    G.ocrSt='running';renderM();
+    // v4 convenience API — auto-manages worker, downloads jpn lang data (~20MB, first run only)
+    const {data:{text}}=await Tesseract.recognize(file,'jpn',{logger:()=>{}});
+    G.ocrText=text.trim();
+    G.ocrParsed=parseOCRText(G.ocrText);
+    G.ocrSt='done';renderM();
+  }catch(err){G.ocrSt='error';renderM();toast('OCR失敗: '+(err.message||'不明なエラー'),true);}
+}
+function parseOCRText(text){
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let address='',building='',code='';
+  for(const line of lines){
+    // Access code pattern
+    const cm=line.match(/アクセスコード[：:＊\s]*([^\s]{3,})/);
+    if(cm){code=cm[1].replace(/[：:＊]/g,'').trim();continue;}
+    // Stand-alone code
+    if(!code&&/^[呼#＃\*\?]?[\d０-９]{3,6}[a-zA-Z呼]?$/.test(line.replace(/\s/g,''))&&line.length<=10){code=line.trim();continue;}
+    // Address
+    const am=line.match(/([^\s区都府]{1,4}(?:[\d０-９]+)[-ー][\d０-９]+-[\d０-９]+)/);
+    if(am&&!address){address=toH(am[1]);continue;}
+    // Building
+    if(address&&!building&&line.length>2&&!/^\d/.test(line)){building=stripRm(line);continue;}
+  }
+  return{address,building,code};
+}
+function applyOCR(){
+  const p=G.ocrParsed;if(!p)return;
+  if(p.address){G.eform.raw_addr=p.address;const fa=document.getElementById('fa');if(fa){fa.value=p.address;onAI(p.address);}}
+  if(p.building){G.eform.building=p.building;const fb=document.getElementById('fb');if(fb)fb.value=p.building;}
+  if(p.code){G.eform.code=p.code;const fc=document.getElementById('fc');if(fc)fc.value=p.code;}
+  toast('フォームに反映しました');
+}
+
+// ── BATCH IMPORT ──────────────────────────────────────────────────────────────
+function bldBatch(){
+  const items=G.batch;const ok=items.filter(i=>!i.isDup&&!i.isErr);const dup=items.filter(i=>i.isDup);const err=items.filter(i=>i.isErr);
+  const tab=G.batchTab||'file';
+  const st=items.length?`<div class="bst">合計 <b>${items.length}</b> 件 — 新規 <b style="color:#1a7a1a">${ok.length}</b> 件、重複 <b style="color:var(--red)">${dup.length}</b> 件${err.length?`、形式不明 <b style="color:#cc8800">${err.length}</b> 件`:''}</div>`:'';
+  const lst=items.length?`<div class="bl2">${items.map(it=>{const cls=it.isErr?'berr':it.isDup?'bdup':'bok';const dc=it.isErr?'derr':it.isDup?'ddup':'dok';const tc=it.isErr?'terr':it.isDup?'tdup':'tok';const tl=it.isErr?'形式不明':it.isDup?'重複':'新規';return`<div class="bi ${cls}"><div class="bdot ${dc}"></div><div style="flex:1;min-width:0"><div class="baddr">${esc(it.rec?it.rec.normalized:it.raw||'?')}</div>${it.rec&&it.rec.building?`<div class="bbldg">${esc(it.rec.building)}</div>`:''}${it.isDup?`<div class="bbldg" style="color:var(--red)">既存: ${esc(it.dupWith)}</div>`:''}</div>${it.rec?`<span class="bcode">${esc(it.rec.code)}</span>`:''}<span class="btag ${tc}">${tl}</span></div>`;}).join('')}</div>`:'';
+  const ft=items.length?`<button class="bcancel" onclick="closeM()">キャンセル</button>${ok.length?`<button class="bsave" onclick="doBatch()">${ok.length}件を追加する</button>`:`<button class="bsave" disabled style="opacity:.4;cursor:default">追加するデータなし</button>`}`:`<button class="bcancel" onclick="closeM()">閉じる</button>`;
+  const fileContent=`<div id="bdz"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><div style="font-weight:600;margin-bottom:3px">タップしてファイルを選択</div><div style="font-size:11px">PCはドラッグ＆ドロップも可</div><div class="bfmt"><span>JSON</span><span>Excel</span><span>CSV/TSV</span></div></div>`;
+  const pasteContent=`<textarea id="paste-ta" class="bpta" placeholder="東向島6-38-3 アイルイムーブル向島 5140&#10;向島3-6-10 メゾンtmd 呼5963&#10;押上1-45-7 スカイツリープレイス 0204"></textarea><div class="bpth">1行1件：住所　建物名　コード（スペース/カンマ区切り）<br>建物名がない場合：住所　コード</div><button class="bparsebtn" onclick="parsePaste()">内容を解析する</button>`;
+  return`<div class="mh"><div class="mt">一括取込</div><button class="mx" onclick="closeM()">×</button></div>
+  <div class="btabs"><button class="btab${tab==='file'?' active':''}" onclick="switchBTab('file')">ファイル取込</button><button class="btab${tab==='paste'?' active':''}" onclick="switchBTab('paste')">テキスト貼付</button></div>
+  ${tab==='file'?fileContent:pasteContent}
+  ${st}${lst}<div class="mf">${ft}</div>`;
+}
+
+function switchBTab(t){G.batchTab=t;G.batch=[];renderM();}
+
+// ── KEY FIX: fresh input every time, proper cleanup ────────────────────────────
+function setupBatchDrop(){
+  const dz=document.getElementById('bdz');if(!dz)return;
+  dz.onclick=()=>{
+    // Create brand new input element — never reuse
+    const inp=document.createElement('input');inp.type='file';inp.accept='.json,.xlsx,.xls,.csv,.tsv,.txt';inp.multiple=true;inp.style.display='none';
+    inp.addEventListener('change',function(){parseBatchFiles([...this.files]);this.remove();},{once:true});
+    document.body.appendChild(inp);inp.click();
+  };
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');parseBatchFiles([...e.dataTransfer.files]);});
+}
+
+function parseBatchFiles(files){
+  if(!files||!files.length){toast('ファイルが選択されていません',true);return;}
+  const dz=document.getElementById('bdz');if(dz)dz.innerHTML='<div style="padding:8px 0;color:var(--mut)">読み込み中...</div>';
+  let all=[],pend=files.length;
+  const done=()=>{if(--pend===0)procBatch(all);};
+  files.forEach(file=>{
+    const name=(file.name||'').toLowerCase();
+    if(name.endsWith('.json'))parseJSONFile(file,r=>{all=all.concat(r);done();});
+    else if(name.endsWith('.xlsx')||name.endsWith('.xls'))parseExcelFile(file,r=>{all=all.concat(r);done();});
+    else if(name.endsWith('.csv')||name.endsWith('.tsv')||name.endsWith('.txt'))parseCSVFile(file,r=>{all=all.concat(r);done();});
+    else{toast(`${file.name}: 非対応フォーマット`,true);done();}
+  });
+}
+
+function parseJSONFile(file,cb){
+  const r=new FileReader();r.onerror=()=>{toast('JSON読み込みエラー',true);cb([]);};
+  r.onload=e=>{
+    try{
+      const raw=JSON.parse(e.target.result);
+      const arr=Array.isArray(raw)?raw:Array.isArray(raw.records)?raw.records:[];
+      const recs=arr.filter(r=>{
+        const addr=r.raw_addr||r.address||r.住所||'';
+        const code=r.code||r.アクセスコード||r.門禁コード||'';
+        return addr&&code;
+      }).map(r=>mkR({raw_addr:toH(r.raw_addr||r.address||r.住所||''),building:(r.building||r.建物名||r.建物||'').trim(),code:String(r.code||r.アクセスコード||r.門禁コード||'').replace(/\.0$/,'').trim(),notes:(r.notes||r.備考||r.メモ||'').trim()}));
+      cb(recs);
+    }catch(err){toast('JSON解析エラー: '+err.message,true);cb([]);}
+  };r.readAsText(file,'UTF-8');
+}
+
+function parseExcelFile(file,cb){
+  const doRead=()=>{
+    const r=new FileReader();r.onerror=()=>{toast('Excel読み込みエラー',true);cb([]);};
+    r.onload=e=>{
+      try{
+        const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+        let all=[];
+        wb.SheetNames.forEach(sn=>{try{const rows=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:'',raw:false});all=all.concat(rowsToRecs(rows));}catch{}});
+        if(!all.length){toast('Excelから有効なデータが見つかりません。列名を確認してください。',true);}
+        cb(all);
+      }catch(err){toast('Excel解析エラー: '+err.message,true);cb([]);}
+    };r.readAsArrayBuffer(file);
+  };
+  if(typeof XLSX!=='undefined'){doRead();}
+  else{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=doRead;s.onerror=()=>{toast('XLSXライブラリの読み込みに失敗しました。CSVでお試しください。',true);cb([]);};document.head.appendChild(s);}
+}
+
+function parseCSVFile(file,cb){
+  const r=new FileReader();r.onerror=()=>{toast('CSV読み込みエラー',true);cb([]);};
+  r.onload=e=>{
+    try{
+      const text=e.target.result;
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      if(!lines.length){cb([]);return;}
+      const sep=text.includes('\t')?'\t':',';
+      const hdrs=lines[0].split(sep).map(h=>h.replace(/^["']/,'').replace(/["']$/,'').trim());
+      const isHdr=/住所|address|raw_addr|アクセスコード|code|建物/i.test(hdrs.join(''));
+      if(isHdr){const rows=lines.slice(1).map(line=>{const vals=csvSplit(line,sep);const obj={};hdrs.forEach((h,i)=>{obj[h]=vals[i]||'';});return obj;});cb(rowsToRecs(rows));}
+      else{cb(lines.map(l=>parseTxtLine(l)).filter(Boolean).map(r=>mkR(r)));}
+    }catch(err){toast('CSV解析エラー: '+err.message,true);cb([]);}
+  };r.readAsText(file,'UTF-8');
+}
+function csvSplit(line,sep){const res=[];let cur='',inQ=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'||c==="'"){inQ=!inQ;}else if(c===sep&&!inQ){res.push(cur.trim());cur='';}else{cur+=c;}}res.push(cur.trim());return res;}
+function rowsToRecs(rows){return rows.map(row=>{const g=(...ks)=>{for(const k of ks){const v=(row[k]||row[k.toLowerCase()]||row[k.toUpperCase()]||'').toString().trim();if(v&&v!=='null'&&v!=='undefined')return v;}return'';};const addr=g('raw_addr','住所','address','アドレス','Address','標準地址','原始地址','addr');const bldg=g('building','建物名','建物','マンション名','Building');const code=g('code','アクセスコード','門禁コード','密码','Code','コード','门禁密碼','access_code');const notes=g('notes','備考','メモ','Notes','Memo');if(!addr||!code)return null;return mkR({raw_addr:toH(addr),building:stripRm(bldg),code:String(code).replace(/\.0$/,'').trim(),notes:notes.trim()});}).filter(Boolean);}
+
+// Paste tab
+const CODE_RE=/^[呼※＊\*#＃\?✳×]?[\d０-９]{3,7}[a-zA-Z呼]?$|^\*[\d０-９]{3,7}$/;
+function isCode(s){return CODE_RE.test((s||'').replace(/\s/g,''));}
+function parseTxtLine(line){
+  line=(line||'').trim();if(!line)return null;
+  let parts;
+  if(line.includes('\t'))parts=line.split('\t').map(s=>s.trim()).filter(Boolean);
+  else if(line.includes(','))parts=line.split(',').map(s=>s.trim()).filter(Boolean);
+  else parts=line.split(/\s+/);
+  if(parts.length<2)return null;
+  const addr=parts[0];const ap=pA(toH(addr));
+  if(!ap.area||ap.chome===0)return null;
+  if(parts.length===2){if(isCode(parts[1]))return{raw_addr:toH(addr),building:'',code:parts[1],notes:''};return null;}
+  if(isCode(parts[parts.length-1])){const code=parts[parts.length-1];const building=parts.slice(1,parts.length-1).join(' ');return{raw_addr:toH(addr),building:stripRm(building),code,notes:''};}
+  if(isCode(parts[1]))return{raw_addr:toH(addr),building:stripRm(parts.slice(2).join(' ')),code:parts[1],notes:''};
+  return null;
+}
+function parsePaste(){const ta=document.getElementById('paste-ta');if(!ta)return;const text=ta.value.trim();if(!text){toast('テキストを入力してください',true);return;}const lines=text.split(/\r?\n/).filter(l=>l.trim());const recs=lines.map(l=>parseTxtLine(l)).filter(Boolean).map(r=>mkR(r));if(!recs.length){toast('認識できる住所がありません',true);return;}procBatch(recs);}
+
+function procBatch(inc){
+  const seen=new Set();
+  G.batch=inc.map(rec=>{const norm=rec.normalized;const ex=G.records.find(r=>r.normalized===norm);const self=seen.has(norm);seen.add(norm);const isDup=!!(ex||self);const isErr=!rec.code;const dupWith=ex?(ex.building||ex.normalized):self?'このファイル内に重複':'';return{rec,isDup,isErr,dupWith,raw:rec.raw_addr};});
+  renderM();
+}
+function doBatch(){const toAdd=G.batch.filter(i=>!i.isDup&&!i.isErr).map(i=>i.rec);if(!toAdd.length)return;let mx=Math.max(0,...G.records.map(r=>r.id));G.records=sRecs([...G.records,...toAdd.map(r=>({...r,id:++mx}))]);lS(G.records);closeM();renderAll();toast(`${toAdd.length}件を追加しました`);}
+
+// ── Guide ──────────────────────────────────────────────────────────────────────
+function bldGuide(){return`<div class="mh"><div class="mt">設定 / 機種変更</div><button class="mx" onclick="closeM()">×</button></div><div class="gs"><div class="gn">1</div><div><div class="gtt">旧端末でバックアップ</div><div class="gd">右上メニュー「バックアップ」→ JSONファイルが保存されます。</div></div></div><div class="gs"><div class="gn">2</div><div><div class="gtt">新端末にファイルを転送</div><div class="gd">AirDrop・LINE・メール等でJSONを送ります。</div></div></div><div class="gs"><div class="gn">3</div><div><div class="gtt">新端末で復元</div><div class="gd">このHTMLを開き、右上メニュー「復元」からJSONを選ぶと全データが戻ります。</div></div></div><div class="wb">定期的にバックアップを保存しておくと安心です。ブラウザのデータ消去でデータが消える場合があります。</div><div style="padding-top:12px;border-top:1px solid #f0f0ea"><div style="font-size:13px;font-weight:700;margin-bottom:6px">写真OCRについて</div><div style="font-size:12px;color:#666;line-height:1.65">「新規追加」の写真OCR機能はGitHub Pages等にデプロイした場合に利用できます。初回はOCR言語データ（約20MB）をダウンロードするため時間がかかります。APIキーは不要です。</div></div><div class="mf"><button onclick="closeM()">閉じる</button></div>`;}
+</script>
+</body>
+</html>
