@@ -117,11 +117,18 @@ textarea{resize:vertical;line-height:1.55}
 .ast{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:12px;color:#555}
 .aok{font-size:12px;color:var(--grn);font-weight:600;margin-top:7px}
 .aerr{font-size:12px;color:var(--red);margin-top:7px}
-.aprev{margin-top:9px;max-height:80px;max-width:100%;border-radius:7px;display:block;border:1px solid var(--bdr);object-fit:contain}
-.ocr-raw{font-size:12px;background:#f8f8f5;border:1px solid var(--bdr);border-radius:8px;padding:9px 11px;margin-top:8px;white-space:pre-wrap;max-height:120px;overflow-y:auto;line-height:1.6;color:#444}
-.ocr-parsed{background:#f0f8ff;border:1px solid #c0d8f5;border-radius:8px;padding:9px 11px;margin-top:7px;font-size:12px;line-height:1.7}
-.ocr-parsed b{color:var(--bl)}
-.ocr-apply{margin-top:8px;background:var(--bl);color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%}
+.ocr-raw-wrap{margin-top:9px}
+.ocr-raw-toggle{font-size:11px;color:var(--mut);cursor:pointer;text-decoration:underline;text-decoration-style:dotted;display:inline-block;margin-bottom:5px}
+.ocr-raw{font-size:11px;background:#f5f5f0;border:1px solid var(--bdr);border-radius:7px;padding:8px 10px;white-space:pre-wrap;max-height:90px;overflow-y:auto;line-height:1.5;color:#666;font-family:var(--font-mono,monospace)}
+.ocr-edit-section{background:#f0f9f0;border:1px solid #b5ddb5;border-radius:9px;padding:10px 11px;margin-top:9px}
+.ocr-edit-title{font-size:11px;font-weight:700;color:#1a7a1a;margin-bottom:8px}
+.ocr-field{margin-bottom:7px}
+.ocr-field label{display:block;font-size:10px;font-weight:600;color:#2a7a3a;margin-bottom:3px;letter-spacing:.03em}
+.ocr-field input{font-size:13px;padding:7px 10px;border:1px solid #b5ddb5;border-radius:7px;background:#fff;width:100%;outline:none;font-family:inherit;color:var(--txt)}
+.ocr-field input:focus{border-color:#1a7a1a;box-shadow:0 0 0 2px rgba(26,122,26,.1)}
+.ocr-field input.has-val{font-weight:600}
+.ocr-apply{margin-top:9px;background:#1a7a1a;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%}
+.ocr-apply:active{opacity:.8}
 
 /* Sugg */
 .sugwrap{border:1px solid var(--bdr);border-radius:9px;margin-top:4px;overflow:hidden}
@@ -181,6 +188,24 @@ textarea{resize:vertical;line-height:1.55}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.err{background:var(--red)}
 
+/* Text extractor modal */
+.ext-ta{font-size:13px;line-height:1.7;min-height:130px;max-height:220px;overflow-y:auto;border-radius:10px;font-family:inherit;color:var(--txt);background:#fff;padding:10px 12px;border:1px solid var(--bdr);width:100%;resize:vertical}
+.ext-ta:focus{border-color:var(--bl);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.ext-hint{font-size:11px;color:var(--mut);margin-top:5px;line-height:1.5}
+.ext-run{background:var(--bl);color:#fff;border:none;border-radius:10px;padding:9px 20px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:10px}
+.ext-run:disabled{opacity:.45;cursor:default}
+.ext-result{background:#f5fff8;border:1px solid #b5ddb5;border-radius:10px;padding:12px 13px;margin-top:13px}
+.ext-result-title{font-size:11px;font-weight:700;color:#1a7a1a;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.ext-f{margin-bottom:8px}
+.ext-f label{display:block;font-size:10px;font-weight:700;color:#2a7a3a;margin-bottom:3px;letter-spacing:.03em}
+.ext-f input{font-size:14px;padding:8px 11px;border:1px solid #b5ddb5;border-radius:8px;background:#fff;width:100%;outline:none;font-family:inherit;color:var(--txt)}
+.ext-f input:focus{border-color:#1a7a1a;box-shadow:0 0 0 2px rgba(26,122,26,.1)}
+.ext-f input.code-inp{font-family:monospace;font-size:17px;font-weight:700;letter-spacing:.06em}
+.ext-send{background:#1a7a1a;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:10px}
+.ext-err{font-size:12px;color:var(--red);margin-top:9px;background:#fff5f5;border:1px solid #f0c0c0;border-radius:8px;padding:9px 11px;line-height:1.5}
+.ext-nokey{font-size:12px;color:#c87000;background:#fffaf0;border:1px solid #f0d890;border-radius:8px;padding:9px 11px;margin-top:9px;line-height:1.6}
+.ext-nokey a{color:var(--bl);text-decoration:none}
+
 @media(max-width:420px){:root{--sw:72px}}
 </style>
 </head>
@@ -221,7 +246,13 @@ textarea{resize:vertical;line-height:1.55}
 <!-- File inputs for OCR -->
 <input type="file" id="icam" accept="image/*" capture="environment" style="display:none">
 <input type="file" id="ocrpick" accept="image/*" style="display:none">
-<button onclick="openM('new')" style="position:fixed;bottom:20px;right:14px;z-index:190;background:var(--bl);color:#fff;border:none;border-radius:14px;padding:12px 18px;font-size:15px;font-weight:700;box-shadow:0 4px 16px rgba(24,95,165,.35)">＋ 追加</button>
+<!-- Floating action buttons -->
+<div style="position:fixed;bottom:20px;right:14px;z-index:190;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+  <button onclick="openM('extract')" title="テキスト抽出" style="width:46px;height:46px;border-radius:50%;background:#fff;border:1.5px solid var(--bdr);box-shadow:0 2px 10px rgba(0,0,0,.12);font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--bl)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+  </button>
+  <button onclick="openM('new')" style="background:var(--bl);color:#fff;border:none;border-radius:14px;padding:12px 18px;font-size:15px;font-weight:700;box-shadow:0 4px 16px rgba(24,95,165,.35)">＋ 追加</button>
+</div>
 
 <script>
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -234,10 +265,12 @@ function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace
 function sM(r,q){return toH([r.raw_addr,r.normalized,r.building,r.code,r.notes].join(' ')).toLowerCase().replace(/\s/g,'').includes(q);}
 
 // ── Storage ────────────────────────────────────────────────────────────────────
-const LK='kaerinoie:v2',LO='kaerinoie:areaOrder';
-let G={records:[],srch:'',area:'all',newId:null,modal:null,eform:null,ocrSt:'idle',ocrText:'',ocrParsed:null,batch:[],batchTab:'file'};
+const LK='kaerinoie:v2',LA='kaerinoie:apikey',LO='kaerinoie:areaOrder';
+let G={records:[],srch:'',area:'all',newId:null,modal:null,eform:null,ocrSt:'idle',ocrText:'',ocrParsed:null,batch:[],batchTab:'file',extSt:'idle',extResult:null};
 function lL(){try{const s=localStorage.getItem(LK);if(s){const p=JSON.parse(s);if(Array.isArray(p)&&p.length)return sRecs(p);}}catch{}return null;}
 function lS(r){try{localStorage.setItem(LK,JSON.stringify(r));}catch{}}
+function gKey(){return localStorage.getItem(LA)||'';}
+function sKey(k){k?localStorage.setItem(LA,k):localStorage.removeItem(LA);}
 function loadOrder(){try{const s=localStorage.getItem(LO);if(s)return JSON.parse(s);}catch{}return[];}
 function saveOrder(o){try{localStorage.setItem(LO,JSON.stringify(o));}catch{}}
 function getOA(){const c={};G.records.forEach(r=>{c[r.area]=(c[r.area]||0)+1;});const all=Object.keys(c);const o=[];G.areaOrder.forEach(a=>{if(c[a])o.push(a);});all.sort((a,b)=>a.localeCompare(b,'ja')).forEach(a=>{if(!o.includes(a))o.push(a);});if(JSON.stringify(G.areaOrder)!==JSON.stringify(o)){G.areaOrder=o;saveOrder(o);}return{c,o};}
@@ -336,7 +369,7 @@ function toast(msg,err=false){const el=document.getElementById('toast');el.textC
 
 // ── Modal ──────────────────────────────────────────────────────────────────────
 function openM(type,id){
-  G.modal=type;G.ocrSt='idle';G.ocrText='';G.ocrParsed=null;G.batch=[];G.batchTab='file';
+  G.modal=type;G.ocrSt='idle';G.ocrText='';G.ocrParsed=null;G.batch=[];G.batchTab='file';G.extSt='idle';G.extResult=null;
   if(type==='new')G.eform={raw_addr:'',building:'',code:'',notes:'',id:null};
   else if(type==='edit'){const r=G.records.find(r=>r.id==id);if(!r)return;G.eform={...r};}
   else if(type==='del')G.eform={id};
@@ -344,7 +377,7 @@ function openM(type,id){
 }
 function closeM(){document.getElementById('overlay').className='';G.modal=null;G.eform=null;}
 function bgClick(e){if(e.target===document.getElementById('overlay'))closeM();}
-function renderM(){const fn={new:bldEdit,edit:bldEdit,del:bldDel,guide:bldGuide,batch:bldBatch}[G.modal];if(fn)document.getElementById('mbox').innerHTML=fn();if(G.modal==='batch')setupBatchDrop();}
+function renderM(){const fn={new:bldEdit,edit:bldEdit,del:bldDel,guide:bldGuide,batch:bldBatch,extract:bldExtract}[G.modal];if(fn)document.getElementById('mbox').innerHTML=fn();if(G.modal==='batch')setupBatchDrop();}
 
 // ── Edit Modal ─────────────────────────────────────────────────────────────────
 function bldEdit(){
@@ -355,11 +388,22 @@ function bldEdit(){
   // OCR section
   const ocrBusy=G.ocrSt==='loading'||G.ocrSt==='running';
   let ocrOut='';
-  if(G.ocrSt==='done'&&G.ocrText){
-    ocrOut=`<div class="ocr-raw">${esc(G.ocrText)}</div>`;
-    if(G.ocrParsed){const p2=G.ocrParsed;ocrOut+=`<div class="ocr-parsed"><b>住所:</b> ${esc(p2.address||'—')}<br><b>建物:</b> ${esc(p2.building||'—')}<br><b>コード:</b> ${esc(p2.code||'—')}</div><button class="ocr-apply" onclick="applyOCR()">この内容をフォームに反映する</button>`;}
-  }else if(G.ocrSt==='error'){ocrOut=`<div class="aerr">OCR失敗。別の画像をお試しください</div>`;}
-  else if(ocrBusy){ocrOut=`<div class="ast"><div class="sp"></div>${G.ocrSt==='loading'?'OCRエンジン読み込み中... (初回は20〜30秒かかります)':'日本語テキスト認識中...'}</div>`;}
+  if(G.ocrSt==='done'){
+    const p2=G.ocrParsed||{address:'',building:'',code:''};
+    // Collapsible raw text
+    ocrOut=`<div class="ocr-raw-wrap">
+      <span class="ocr-raw-toggle" onclick="toggleRaw(this)">▶ OCR生テキストを表示（確認用）</span>
+      <div class="ocr-raw" style="display:none">${esc(G.ocrText)}</div>
+    </div>
+    <div class="ocr-edit-section">
+      <div class="ocr-edit-title">認識結果（修正してから反映できます）</div>
+      <div class="ocr-field"><label>住所</label><input id="ocr-addr" value="${esc(p2.address||'')}" placeholder="未検出 — 手入力してください" class="${p2.address?'has-val':''}"></div>
+      <div class="ocr-field"><label>建物名</label><input id="ocr-bldg" value="${esc(p2.building||'')}" placeholder="未検出（任意）" class="${p2.building?'has-val':''}"></div>
+      <div class="ocr-field"><label>アクセスコード</label><input id="ocr-code" value="${esc(p2.code||'')}" placeholder="未検出 — 手入力してください" class="${p2.code?'has-val':''}" style="font-family:monospace;font-weight:700;letter-spacing:.05em"></div>
+      <button class="ocr-apply" onclick="applyOCR()">↓ フォームに反映する</button>
+    </div>`;
+  }else if(G.ocrSt==='error'){ocrOut=`<div class="aerr" style="margin-top:8px">OCR失敗。画像が鮮明か確認し、別の写真をお試しください</div>`;}
+  else if(ocrBusy){ocrOut=`<div class="ast"><div class="sp"></div>${G.ocrSt==='loading'?'OCRエンジン読み込み中... (初回は20〜30秒)':'日本語テキスト認識中...'}</div>`;}
 
   return`<div class="mh"><div class="mt">${isN?'新規追加':'記録を編集'}</div><button class="mx" onclick="closeM()">×</button></div>
   <div class="aibox" style="background:#f5fff8;border-color:#b5ddb5">
@@ -428,28 +472,65 @@ async function handleOCRImg(file){
     G.ocrSt='done';renderM();
   }catch(err){G.ocrSt='error';renderM();toast('OCR失敗: '+(err.message||'不明なエラー'),true);}
 }
+function toggleRaw(el){
+  const raw=el.nextElementSibling;
+  const shown=raw.style.display!=='none';
+  raw.style.display=shown?'none':'block';
+  el.textContent=(shown?'▶':'▼')+' OCR生テキストを表示（確認用）';
+}
 function parseOCRText(text){
-  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  // Normalize: full-width → half-width, remove excess spaces
+  const norm=toH(text).replace(/\s+/g,' ');
+  const lines=norm.split(/[\n\r]/).map(l=>l.trim()).filter(Boolean);
   let address='',building='',code='';
+
   for(const line of lines){
-    // Access code pattern
-    const cm=line.match(/アクセスコード[：:＊\s]*([^\s]{3,})/);
-    if(cm){code=cm[1].replace(/[：:＊]/g,'').trim();continue;}
-    // Stand-alone code
-    if(!code&&/^[呼#＃\*\?]?[\d０-９]{3,6}[a-zA-Z呼]?$/.test(line.replace(/\s/g,''))&&line.length<=10){code=line.trim();continue;}
-    // Address
-    const am=line.match(/([^\s区都府]{1,4}(?:[\d０-９]+)[-ー][\d０-９]+-[\d０-９]+)/);
-    if(am&&!address){address=toH(am[1]);continue;}
-    // Building
-    if(address&&!building&&line.length>2&&!/^\d/.test(line)){building=stripRm(line);continue;}
+    // 1. Explicit access code label — highest priority
+    const cm=line.match(/(?:アクセスコード|access\s*code)[^\d０-９呼#*＃\*]*([呼#＃\*\?]?[\d０-９]{3,7}[a-zA-Z呼]?)/i);
+    if(cm&&!code){code=toH(cm[1]).trim();continue;}
+
+    // 2. Standalone code line (3-7 digits, optionally prefixed/suffixed)
+    const codeLine=line.replace(/\s/g,'');
+    if(!code&&/^[呼#＃\*\?✳×]?[\d]{3,7}[a-zA-Z呼]?$/.test(codeLine)&&codeLine.length<=9){
+      code=codeLine;continue;
+    }
+
+    // 3. Address: handle various formats including spaces inserted by OCR
+    // Pattern: area name + chome-banchi-go, allowing single spaces within
+    const am=line.match(/([^\s]{2,5})\s*(\d+)\s*[-－]\s*(\d+)\s*[-－]\s*(\d+)/);
+    if(am&&!address){
+      const area=am[1].replace(/^(東京都|墨田区)/,'');
+      address=`${area}${am[2]}-${am[3]}-${am[4]}`;
+      continue;
+    }
+    // Also match "X丁目Y-Z" or "X丁目Y番Z号"
+    const am2=line.match(/([^\s]{2,5})\s*(\d+)丁目\s*(\d+)[-番]\s*(\d+)/);
+    if(am2&&!address){
+      const area=am2[1].replace(/^(東京都|墨田区)/,'');
+      address=`${area}${am2[2]}-${am2[3]}-${am2[4]}`;
+      continue;
+    }
+
+    // 4. Building name: after address found, first non-numeric non-short line
+    if(address&&!building&&line.length>=3&&!/^\d/.test(line)&&!/^[呼#＃\*]/.test(line)){
+      // Skip lines that look like person names or delivery-app UI text
+      if(!/(?:配達|受取|不在|在宅|荷物|注意|設定|住所を|場所を|翻訳)/.test(line)){
+        building=stripRm(line);
+      }
+      continue;
+    }
   }
   return{address,building,code};
 }
 function applyOCR(){
-  const p=G.ocrParsed;if(!p)return;
-  if(p.address){G.eform.raw_addr=p.address;const fa=document.getElementById('fa');if(fa){fa.value=p.address;onAI(p.address);}}
-  if(p.building){G.eform.building=p.building;const fb=document.getElementById('fb');if(fb)fb.value=p.building;}
-  if(p.code){G.eform.code=p.code;const fc=document.getElementById('fc');if(fc)fc.value=p.code;}
+  // Read from the editable OCR input fields
+  const addr=(document.getElementById('ocr-addr')?.value||'').trim();
+  const bldg=stripRm(document.getElementById('ocr-bldg')?.value||'');
+  const code=(document.getElementById('ocr-code')?.value||'').trim();
+  if(addr){G.eform.raw_addr=addr;const fa=document.getElementById('fa');if(fa){fa.value=addr;onAI(addr);}}
+  if(bldg){G.eform.building=bldg;const fb=document.getElementById('fb');if(fb)fb.value=bldg;}
+  if(code){G.eform.code=code;const fc=document.getElementById('fc');if(fc)fc.value=code;}
+  if(!addr&&!code){toast('住所またはコードを入力してください',true);return;}
   toast('フォームに反映しました');
 }
 
@@ -575,8 +656,104 @@ function procBatch(inc){
 }
 function doBatch(){const toAdd=G.batch.filter(i=>!i.isDup&&!i.isErr).map(i=>i.rec);if(!toAdd.length)return;let mx=Math.max(0,...G.records.map(r=>r.id));G.records=sRecs([...G.records,...toAdd.map(r=>({...r,id:++mx}))]);lS(G.records);closeM();renderAll();toast(`${toAdd.length}件を追加しました`);}
 
+// ── Text Extractor Modal ───────────────────────────────────────────────────────
+function bldExtract(){
+  const st=G.extSt;const res=G.extResult;const key=gKey();
+  // Result section
+  let resultHtml='';
+  if(st==='running'){
+    resultHtml=`<div style="display:flex;align-items:center;gap:8px;margin-top:13px;font-size:13px;color:var(--mut)"><div class="sp" style="border-color:#c5d5f5;border-top-color:var(--bl)"></div>Claude が抽出中...</div>`;
+  }else if(st==='done'&&res){
+    resultHtml=`<div class="ext-result">
+      <div class="ext-result-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a7a1a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        抽出完了 — 修正してから追加できます
+      </div>
+      <div class="ext-f"><label>住所</label><input id="ext-addr" value="${esc(res.address||'')}" placeholder="見つかりませんでした"></div>
+      <div class="ext-f"><label>アクセスコード</label><input id="ext-code" value="${esc(res.access_code||'')}" placeholder="見つかりませんでした" class="code-inp"></div>
+      <button class="ext-send" onclick="sendExtractToForm()">↓ 新規追加フォームに送る</button>
+    </div>`;
+  }else if(st==='error'){
+    resultHtml=`<div class="ext-err">${esc(G.extErrMsg||'抽出に失敗しました。再試行してください。')}</div>`;
+  }
+  // API key warning
+  const keyWarn=!key?`<div class="ext-nokey">APIキー未設定のため Claude 抽出は利用できません。<br><a href="#" onclick="closeM();openM('guide')">設定</a>からAnthropicのAPIキーを入力してください。<br><span style="font-size:11px;color:#888">キーなしでも下のローカル解析ボタンで試せます。</span></div>`:'';
+  const busy=st==='running';
+  return`<div class="mh">
+    <div class="mt">テキスト抽出</div>
+    <button class="mx" onclick="closeM()">×</button>
+  </div>
+  <p style="font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.6">OCR結果やアプリ画面のコピーテキストを貼り付けると、住所とアクセスコードを自動で抽出します。</p>
+  <textarea id="ext-text" class="ext-ta" placeholder="ここにテキストを貼り付けてください&#10;&#10;例：&#10;墨田区東向島6-38-3&#10;アイルイムーブル向島506&#10;アクセスコード：5140"></textarea>
+  <div class="ext-hint">Amazon配達アプリの画面テキスト、OCR結果など何でも可</div>
+  ${keyWarn}
+  <button class="ext-run" ${busy||!key?'disabled':''} onclick="runExtract()">${busy?'抽出中...':'Claude で抽出する'}</button>
+  ${!key?`<button class="ext-run" style="margin-top:7px;background:#2a7a3a;border-color:#2a7a3a;" ${busy?'disabled':''} onclick="runExtractLocal()">ローカル解析で試す（精度低め）</button>`:''}
+  ${resultHtml}`;
+}
+
+async function runExtract(){
+  const text=(document.getElementById('ext-text')?.value||'').trim();
+  if(!text){toast('テキストを入力してください',true);return;}
+  const key=gKey();if(!key){toast('APIキー未設定',true);return;}
+  G.extSt='running';G.extResult=null;G.extErrMsg='';renderM();
+  try{
+    const prompt=`请从 OCR 原始文字中提取 \`住所\` 和 \`アクセスコード\`，并按固定格式输出。
+规则：
+* 只抽取，不解释
+* \`住所\`：提取最可能的日本地址（去掉「東京都」「墨田区」等前置词，保留区域名+番地格式，如 東向島6-38-3）
+* 若地址末尾包含房间号，则删除房间号
+* \`アクセスコード\`：提取「アクセスコード」后面的代码内容（包含 * # 呼 等前缀符号）
+* 若未找到，输出空字符串
+* 不要补充不存在的信息
+请仅输出 JSON，无任何其他文字：
+{"address":"","access_code":""}
+
+OCR 原始文字：
+${text}`;
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:200,messages:[{role:'user',content:prompt}]})
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${res.status}`);}
+    const data=await res.json();
+    const txt=data.content?.map(c=>c.text||'').join('')||'';
+    const m=txt.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('JSONが返されませんでした');
+    const parsed=JSON.parse(m[0]);
+    // Clean up address
+    if(parsed.address)parsed.address=toH(parsed.address).replace(/^(東京都|墨田区)/,'').trim();
+    G.extResult=parsed;G.extSt='done';renderM();
+  }catch(err){
+    G.extSt='error';G.extErrMsg=err.message||'不明なエラー';renderM();
+  }
+}
+
+function runExtractLocal(){
+  const text=(document.getElementById('ext-text')?.value||'').trim();
+  if(!text){toast('テキストを入力してください',true);return;}
+  const parsed=parseOCRText(text);
+  G.extResult={address:parsed.address||'',access_code:parsed.code||''};
+  G.extSt='done';renderM();
+}
+
+function sendExtractToForm(){
+  const addr=(document.getElementById('ext-addr')?.value||'').trim();
+  const code=(document.getElementById('ext-code')?.value||'').trim();
+  closeM();
+  // Pre-fill new record form
+  G.eform={raw_addr:addr,building:'',code,notes:'',id:null};
+  G.modal='new';G.ocrSt='idle';G.ocrText='';G.ocrParsed=null;
+  renderM();document.getElementById('overlay').className='show';
+  // Trigger address parse hint
+  if(addr){setTimeout(()=>{const fa=document.getElementById('fa');if(fa){fa.value=addr;onAI(addr);}},50);}
+}
+
 // ── Guide ──────────────────────────────────────────────────────────────────────
-function bldGuide(){return`<div class="mh"><div class="mt">設定 / 機種変更</div><button class="mx" onclick="closeM()">×</button></div><div class="gs"><div class="gn">1</div><div><div class="gtt">旧端末でバックアップ</div><div class="gd">右上メニュー「バックアップ」→ JSONファイルが保存されます。</div></div></div><div class="gs"><div class="gn">2</div><div><div class="gtt">新端末にファイルを転送</div><div class="gd">AirDrop・LINE・メール等でJSONを送ります。</div></div></div><div class="gs"><div class="gn">3</div><div><div class="gtt">新端末で復元</div><div class="gd">このHTMLを開き、右上メニュー「復元」からJSONを選ぶと全データが戻ります。</div></div></div><div class="wb">定期的にバックアップを保存しておくと安心です。ブラウザのデータ消去でデータが消える場合があります。</div><div style="padding-top:12px;border-top:1px solid #f0f0ea"><div style="font-size:13px;font-weight:700;margin-bottom:6px">写真OCRについて</div><div style="font-size:12px;color:#666;line-height:1.65">「新規追加」の写真OCR機能はGitHub Pages等にデプロイした場合に利用できます。初回はOCR言語データ（約20MB）をダウンロードするため時間がかかります。APIキーは不要です。</div></div><div class="mf"><button onclick="closeM()">閉じる</button></div>`;}
+function bldGuide(){const k=gKey();return`<div class="mh"><div class="mt">設定 / 機種変更</div><button class="mx" onclick="closeM()">×</button></div><div class="gs"><div class="gn">1</div><div><div class="gtt">旧端末でバックアップ</div><div class="gd">右上メニュー「バックアップ」→ JSONファイルが保存されます。</div></div></div><div class="gs"><div class="gn">2</div><div><div class="gtt">新端末にファイルを転送</div><div class="gd">AirDrop・LINE・メール等でJSONを送ります。</div></div></div><div class="gs"><div class="gn">3</div><div><div class="gtt">新端末で復元</div><div class="gd">このHTMLを開き、右上メニュー「復元」からJSONを選ぶと全データが戻ります。</div></div></div><div class="wb">定期的にバックアップを保存しておくと安心です。ブラウザのデータ消去でデータが消える場合があります。</div><div style="padding-top:12px;border-top:1px solid #f0f0ea;margin-bottom:14px"><div style="font-size:13px;font-weight:700;margin-bottom:6px">テキスト抽出 APIキー</div><input type="password" id="ak" placeholder="sk-ant-..." value="${esc(k)}" style="font-family:monospace;font-size:13px"><div style="font-size:11px;color:#999;margin-top:5px;line-height:1.55">右下の📋ボタンのClaude抽出に使用します。<a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> で取得。このデバイスにのみ保存されます。</div><div style="font-size:11px;margin-top:5px;font-weight:600;${k?'color:#1D9E75':'color:#c87000'}" id="apist">${k?'✓ APIキー設定済み':'未設定（ローカル解析は引き続き利用可）'}</div><div style="margin-top:9px;display:flex;gap:7px"><button onclick="svKey()" style="background:var(--bl);color:#fff;border-color:var(--bl);font-weight:600">保存</button><button onclick="clKey()" style="color:var(--red);border-color:#f0c0c0">削除</button></div></div><div style="padding-top:12px;border-top:1px solid #f0f0ea"><div style="font-size:13px;font-weight:700;margin-bottom:6px">写真OCRについて</div><div style="font-size:12px;color:#666;line-height:1.65">「新規追加」の写真OCR機能はGitHub Pages等にデプロイした場合に利用できます。初回はOCR言語データ（約20MB）をダウンロードするため時間がかかります。APIキーは不要です。</div></div><div class="mf"><button onclick="closeM()">閉じる</button></div>`;}
+function svKey(){const k=(document.getElementById('ak').value||'').trim();sKey(k);const el=document.getElementById('apist');if(el){el.style.color=k?'#1D9E75':'#c87000';el.textContent=k?'✓ 保存しました':'削除しました';}toast(k?'APIキーを保存しました':'削除しました');}
+function clKey(){sKey('');const i=document.getElementById('ak');if(i)i.value='';const el=document.getElementById('apist');if(el){el.style.color='#c87000';el.textContent='未設定';}toast('削除しました');}
 </script>
 </body>
 </html>
