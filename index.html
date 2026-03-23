@@ -479,45 +479,54 @@ function toggleRaw(el){
   el.textContent=(shown?'▶':'▼')+' OCR生テキストを表示（確認用）';
 }
 function parseOCRText(text){
-  // Normalize: full-width → half-width, remove excess spaces
-  const norm=toH(text).replace(/\s+/g,' ');
-  const lines=norm.split(/[\n\r]/).map(l=>l.trim()).filter(Boolean);
+  // Keep originals for keyword detection; toH converts ー→- which breaks アクセスコード matching
+  const origLines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
   let address='',building='',code='';
+  let nextLineIsCode=false;
 
-  for(const line of lines){
-    // 1. Explicit access code label — highest priority
-    const cm=line.match(/(?:アクセスコード|access\s*code)[^\d０-９呼#*＃\*]*([呼#＃\*\?]?[\d０-９]{3,7}[a-zA-Z呼]?)/i);
-    if(cm&&!code){code=toH(cm[1]).trim();continue;}
+  for(let i=0;i<origLines.length;i++){
+    const orig=origLines[i];
+    const norm=toH(orig);
 
-    // 2. Standalone code line (3-7 digits, optionally prefixed/suffixed)
-    const codeLine=line.replace(/\s/g,'');
-    if(!code&&/^[呼#＃\*\?✳×]?[\d]{3,7}[a-zA-Z呼]?$/.test(codeLine)&&codeLine.length<=9){
-      code=codeLine;continue;
+    // 1a. Label alone on line — check ORIG to keep ー intact
+    if(!code&&/^(?:アクセスコード|access\s*code)\s*[：:＊]?\s*$/i.test(orig)){
+      nextLineIsCode=true;continue;
+    }
+    // 1b. Next-line is the code value
+    if(nextLineIsCode){
+      nextLineIsCode=false;
+      const v=norm.replace(/\s/g,'');
+      if(v)code=v;
+      continue;
+    }
+    // 1c. Label + value on same line — check ORIG for keyword
+    const cm=orig.match(/(?:アクセスコード|access\s*code)\s*[：:\s]\s*(\S{2,})/i);
+    if(cm&&!code){code=toH(cm[1]).replace(/^[：:]/,'').trim();continue;}
+
+    // 2. Standalone code line (use norm for digit matching)
+    const cl=norm.replace(/\s/g,'');
+    if(!code&&/^[呼#＃\*\?✳×]?[\d]{3,7}[a-zA-Z呼]?$/.test(cl)&&cl.length<=9){
+      code=cl;continue;
     }
 
-    // 3. Address: handle various formats including spaces inserted by OCR
-    // Pattern: area name + chome-banchi-go, allowing single spaces within
-    const am=line.match(/([^\s]{2,5})\s*(\d+)\s*[-－]\s*(\d+)\s*[-－]\s*(\d+)/);
+    // 3. Address (use norm for number normalization, strip room number)
+    const stripped=norm.replace(/^(東京都|墨田区)/,'');
+    const am=stripped.match(/^([^\s\d]{1,6})\s*(\d+)\s*[-]\s*(\d+)\s*[-]\s*(\d+)/);
     if(am&&!address){
-      const area=am[1].replace(/^(東京都|墨田区)/,'');
-      address=`${area}${am[2]}-${am[3]}-${am[4]}`;
+      address=`${am[1].trim()}${am[2]}-${am[3]}-${am[4]}`;
       continue;
     }
-    // Also match "X丁目Y-Z" or "X丁目Y番Z号"
-    const am2=line.match(/([^\s]{2,5})\s*(\d+)丁目\s*(\d+)[-番]\s*(\d+)/);
+    const am2=stripped.match(/^([^\s\d]{1,6})\s*(\d+)丁目\s*(\d+)[-番]\s*(\d+)/);
     if(am2&&!address){
-      const area=am2[1].replace(/^(東京都|墨田区)/,'');
-      address=`${area}${am2[2]}-${am2[3]}-${am2[4]}`;
+      address=`${am2[1].trim()}${am2[2]}-${am2[3]}-${am2[4]}`;
       continue;
     }
 
-    // 4. Building name: after address found, first non-numeric non-short line
-    if(address&&!building&&line.length>=3&&!/^\d/.test(line)&&!/^[呼#＃\*]/.test(line)){
-      // Skip lines that look like person names or delivery-app UI text
-      if(!/(?:配達|受取|不在|在宅|荷物|注意|設定|住所を|場所を|翻訳)/.test(line)){
-        building=stripRm(line);
+    // 4. Building: after address, check ORIG for skip keywords
+    if(address&&!building&&orig.length>=3&&!/^[\d呼#＃\*]/.test(orig)){
+      if(!/(?:配達|受取|不在|在宅|荷物|注意|設定|住所を|場所を|翻訳|メモ|宅配|DA\d|\d{10,})/.test(orig)){
+        building=stripRm(orig);
       }
-      continue;
     }
   }
   return{address,building,code};
@@ -670,6 +679,7 @@ function bldExtract(){
         抽出完了 — 修正してから追加できます
       </div>
       <div class="ext-f"><label>住所</label><input id="ext-addr" value="${esc(res.address||'')}" placeholder="見つかりませんでした"></div>
+      <div class="ext-f"><label>マンション名（任意）</label><input id="ext-bldg" value="${esc(res.building||'')}" placeholder="なければ空欄"></div>
       <div class="ext-f"><label>アクセスコード</label><input id="ext-code" value="${esc(res.access_code||'')}" placeholder="見つかりませんでした" class="code-inp"></div>
       <button class="ext-send" onclick="sendExtractToForm()">↓ 新規追加フォームに送る</button>
     </div>`;
@@ -698,18 +708,17 @@ async function runExtract(){
   const key=gKey();if(!key){toast('APIキー未設定',true);return;}
   G.extSt='running';G.extResult=null;G.extErrMsg='';renderM();
   try{
-    const prompt=`请从 OCR 原始文字中提取 \`住所\` 和 \`アクセスコード\`，并按固定格式输出。
+    const prompt=`请从以下文字中提取「住所」「マンション名」「アクセスコード」，按固定格式输出。
 规则：
 * 只抽取，不解释
-* \`住所\`：提取最可能的日本地址（去掉「東京都」「墨田区」等前置词，保留区域名+番地格式，如 東向島6-38-3）
-* 若地址末尾包含房间号，则删除房间号
-* \`アクセスコード\`：提取「アクセスコード」后面的代码内容（包含 * # 呼 等前缀符号）
-* 若未找到，输出空字符串
+* 「住所」：日本地址，去掉「東京都」「墨田区」等前置词，格式如「向島3-26-10」。若末尾有房间号（如-502），删除房间号
+* 「マンション名」：建物名称，不含房间号。例如「アイ・ステージ向島」。若无则空字符串
+* 「アクセスコード」：「アクセスコード」或「アクセスコード:」后面的值，可能在下一行。包含「呼」「#」「*」等前缀符号。若无则空字符串
 * 不要补充不存在的信息
-请仅输出 JSON，无任何其他文字：
-{"address":"","access_code":""}
+仅输出 JSON，无其他文字：
+{"address":"","building":"","access_code":""}
 
-OCR 原始文字：
+文字内容：
 ${text}`;
     const res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -734,19 +743,18 @@ function runExtractLocal(){
   const text=(document.getElementById('ext-text')?.value||'').trim();
   if(!text){toast('テキストを入力してください',true);return;}
   const parsed=parseOCRText(text);
-  G.extResult={address:parsed.address||'',access_code:parsed.code||''};
+  G.extResult={address:parsed.address||'',building:parsed.building||'',access_code:parsed.code||''};
   G.extSt='done';renderM();
 }
 
 function sendExtractToForm(){
   const addr=(document.getElementById('ext-addr')?.value||'').trim();
+  const bldg=stripRm(document.getElementById('ext-bldg')?.value||'');
   const code=(document.getElementById('ext-code')?.value||'').trim();
   closeM();
-  // Pre-fill new record form
-  G.eform={raw_addr:addr,building:'',code,notes:'',id:null};
+  G.eform={raw_addr:addr,building:bldg,code,notes:'',id:null};
   G.modal='new';G.ocrSt='idle';G.ocrText='';G.ocrParsed=null;
   renderM();document.getElementById('overlay').className='show';
-  // Trigger address parse hint
   if(addr){setTimeout(()=>{const fa=document.getElementById('fa');if(fa){fa.value=addr;onAI(addr);}},50);}
 }
 
